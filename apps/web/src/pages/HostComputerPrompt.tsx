@@ -31,24 +31,23 @@ export function HostComputerPrompt({
   const mac = desktop?.platform === "darwin";
   const hostLabel = mac ? t`this Mac` : t`this computer`;
 
-  useEffect(
-    () =>
-      desktop?.computer?.onConfigure(() => {
-        void rpc
-          .me()
-          .then((me) => {
-            if (me.canChooseHostComputer) {
-              setConfiguring(me.computerHost != null);
-              setOpen(true);
-            }
-          })
-          .catch(() => undefined);
-      }),
-    [desktop],
-  );
+  useEffect(() => {
+    if (!desktop?.computer?.managesHostChoice) return;
+    return desktop.computer.onConfigure(() => {
+      void rpc
+        .me()
+        .then((me) => {
+          if (me.canChooseHostComputer) {
+            setConfiguring(me.computerHost != null);
+            setOpen(true);
+          }
+        })
+        .catch(() => undefined);
+    });
+  }, [desktop]);
 
   useEffect(() => {
-    if (!desktop) return;
+    if (!desktop?.computer?.managesHostChoice) return;
     if (initialMe) {
       if (initialMe.canChooseHostComputer && initialMe.computerHost == null) setOpen(true);
       return;

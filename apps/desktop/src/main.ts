@@ -1,27 +1,13 @@
 import path from "node:path";
 import type { MenuItemConstructorOptions } from "electron";
-import {
-  app,
-  BrowserWindow,
-  ipcMain,
-  Menu,
-  Notification,
-  nativeImage,
-  session,
-  shell,
-  Tray,
-} from "electron";
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, session, shell, Tray } from "electron";
 import { BackendMonitor } from "./backend-monitor";
-import { CHAT_ENHANCEMENTS_CSS } from "./chat-theme";
 import { loadConfig, normalizeURL, saveConfig } from "./config";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 let backendMonitor: BackendMonitor | null = null;
-
-// 存储活动通知引用以便通过 tag 合并防刷屏
-const activeNotifications = new Map<string, Notification>();
 
 function getConfigPath(): string {
   return path.join(app.getPath("userData"), "config.json");
@@ -289,78 +275,9 @@ function createWindow() {
   mainWindow.on("closed", () => {
     mainWindow = null;
   });
-
-  // 5. 注入现代毛玻璃渐变拖动条与 Grok 风格 Bot 悬浮胶囊样式
-  mainWindow.webContents.on("did-finish-load", () => {
-    mainWindow?.webContents.insertCSS(CHAT_ENHANCEMENTS_CSS).catch((err) => {
-      console.warn("[Rakazo Main] insertCSS 失败:", err);
-    });
-  });
 }
 
-// 统一的原生通知派发与 tag 合并处理
-function postNotification(payload: { title: string; body: string; tag?: string; data?: any }) {
-  if (!Notification.isSupported()) return;
-
-  const tag = payload.tag || "";
-
-  // 防刷屏合并：若有相同 tag 的通知在展示，先关闭前一条
-  if (tag && activeNotifications.has(tag)) {
-    try {
-      const prev = activeNotifications.get(tag);
-      prev?.close();
-    } catch (_e) {
-      // ignore
-    }
-  }
-
-  const notification = new Notification({
-    title: payload.title || "Rakazo",
-    body: payload.body,
-    silent: false,
-  });
-
-  if (tag) {
-    activeNotifications.set(tag, notification);
-  }
-
-  notification.on("click", () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.show();
-      mainWindow.focus();
-
-      if (payload.data?.url) {
-        mainWindow.loadURL(payload.data.url);
-      }
-    }
-  });
-
-  notification.on("close", () => {
-    if (tag && activeNotifications.get(tag) === notification) {
-      activeNotifications.delete(tag);
-    }
-  });
-
-  notification.show();
-}
-
-// IPC 消息处理与契约对齐
 function registerIpcHandlers() {
-  // 1. 系统通知与托盘辅助
-  ipcMain.on("desktop.notify.post", (_event, payload) => {
-    postNotification(payload);
-  });
-  ipcMain.handle("desktop.notify.show", (_event, payload) => {
-    postNotification(payload);
-    return true;
-  });
-  ipcMain.handle("desktop.tray.setWorking", (_event, isWorking: boolean) => {
-    updateTrayWorkingState(Boolean(isWorking));
-    return true;
-  });
-
-  // 2. Dock 未读数角标
   ipcMain.handle("desktop.badge.set", (_event, count: number) => {
     if (typeof app.setBadgeCount === "function") {
       return app.setBadgeCount(count);
@@ -406,33 +323,6 @@ function registerIpcHandlers() {
       return { ok: false, error: err?.message || String(err) };
     }
   });
-
-  ipcMain.handle("desktop.config.reset", () => {
-    resetServer();
-    return true;
-  });
-
-  // 5. 占位/兼容调用
-  ipcMain.handle("desktop.computer.requestAccess", () => false);
-  ipcMain.handle("desktop.computer.revokeAccess", () => true);
-  ipcMain.handle("desktop.device.state", () => ({}));
-  ipcMain.handle("desktop.device.setAllowed", () => true);
-  ipcMain.handle("desktop.locale.set", () => true);
-  ipcMain.handle("desktop.monitoring.enabled", () => false);
-  ipcMain.handle("desktop.passkeys.rpIds", () => []);
-  ipcMain.handle("desktop.update.state", () => ({
-    phase: "idle",
-    currentVersion: "0.1.0",
-    availableVersion: null,
-    percent: null,
-    message: null,
-    checkedAt: new Date().toISOString(),
-  }));
-  ipcMain.handle("desktop.update.check", () => null);
-  ipcMain.handle("desktop.update.download", () => null);
-  ipcMain.handle("desktop.update.install", () => null);
-  ipcMain.handle("desktop.oauth.open", () => null);
-  ipcMain.handle("desktop.oauth.cancel", () => null);
 }
 
 // 应用程序生命周期

@@ -232,11 +232,6 @@
           if (res?.error) {
             throw new Error(res.error);
           }
-        } else if (window.mygo?.call) {
-          const res = await window.mygo.call('DesktopBridge.ConnectInstance', val);
-          if (res?.error) {
-            throw new Error(res.error);
-          }
         } else {
           throw new Error('桌面通信 Bridge 未就绪');
         }
