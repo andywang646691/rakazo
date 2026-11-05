@@ -1,21 +1,25 @@
 import { build } from "esbuild";
 
-await build({
-  entryPoints: ["src/main.ts"],
-  outfile: "dist/main.js",
+// The vendored client bundles with Bun. This workspace builds with esbuild so
+// Turbo, CI, and the server image do not need a second package manager.
+const shared = {
   bundle: true,
   platform: "node",
-  format: "esm",
+  format: "cjs",
   target: "node22",
+  external: ["electron"],
   sourcemap: true,
-  banner: {
-    js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
-  },
-  external: ["electron", "electron-updater", "koffi", "@sentry/electron"],
-  // Only the release workflow's builds report errors; local and agent builds never do.
-  define: {
-    "process.env.RAKAZO_DESKTOP_RELEASE": JSON.stringify(process.env.RAKAZO_DESKTOP_RELEASE ?? ""),
-    // Self-hosted builds associated with their own passkey domain (see src/passkeys.ts).
-    "process.env.RAKAZO_PASSKEY_RP_ID": JSON.stringify(process.env.RAKAZO_PASSKEY_RP_ID ?? ""),
-  },
+  legalComments: "none",
+};
+
+await build({
+  ...shared,
+  entryPoints: ["src/main.ts"],
+  outfile: "bundle/main.js",
+});
+
+await build({
+  ...shared,
+  entryPoints: ["src/preload.ts"],
+  outfile: "bundle/preload.js",
 });

@@ -17,7 +17,7 @@
         "PUBLIC_POSTHOG_HOST",
         "PUBLIC_POSTHOG_KEY"
       ],
-      "outputs": ["dist/**", "src/generated/**"]
+      "outputs": ["dist/**", "bundle/**", "src/generated/**"]
     },
     "check": {
       "dependsOn": ["^check", "^generate", "generate"]

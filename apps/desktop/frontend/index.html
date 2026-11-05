@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rakazo</title>
+  <style>
+    :root {
+      --bg: #f9f9fb;
+      --card-bg: #ffffff;
+      --border: #e5e5ea;
+      --text-primary: #1c1c1e;
+      --text-secondary: #8e8e93;
+      --accent: #f26522;
+      --accent-hover: #d95316;
+      --error: #ff3b30;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1e;
+        --card-bg: #2c2c2e;
+        --border: #38383a;
+        --text-primary: #f2f2f7;
+        --text-secondary: #98989d;
+        --accent: #f26522;
+        --accent-hover: #ff7536;
+        --error: #ff453a;
+        --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+      }
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-select: none;
+      padding: 24px;
+    }
+    .drag-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 38px;
+      -webkit-app-region: drag;
+      z-index: 100;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 440px;
+      padding: 40px 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .logo-container {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 18px;
+      box-shadow: 0 4px 12px rgba(242, 101, 34, 0.25);
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    p.subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+      line-height: 1.4;
+    }
+    form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .input-group {
+      text-align: left;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    input[type="url"], input[type="text"] {
+      width: 100%;
+      height: 42px;
+      padding: 0 14px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      font-family: inherit;
+    }
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(242, 101, 34, 0.2);
+    }
+    button.primary-btn {
+      width: 100%;
+      height: 42px;
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.05s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    button.primary-btn:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+    button.primary-btn:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+    button.primary-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .error-box {
+      display: none;
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(255, 59, 48, 0.1);
+      border: 1px solid rgba(255, 59, 48, 0.25);
+      border-radius: 8px;
+      color: var(--error);
+      font-size: 13px;
+      text-align: left;
+      line-height: 1.4;
+    }
+    .hint {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="drag-bar"></div>
+  <div class="card">
+    <div class="logo-container">
+      <img src="icon.png" alt="Rakazo Logo" onerror="this.style.display='none'" />
+    </div>
+    <h1>连接到 Rakazo</h1>
+    <p class="subtitle">输入您的 Rakazo VPS 实例地址以进入工作台</p>
+
+    <form id="connect-form">
+      <div class="input-group">
+        <label for="server-url">实例地址 (Server URL)</label>
+        <input
+          id="server-url"
+          type="text"
+          placeholder="https://rakazo.your-vps.com"
+          autocomplete="off"
+          autofocus
+          required
+        />
+      </div>
+      <button id="submit-btn" type="submit" class="primary-btn">
+        <span>连接并登录</span>
+      </button>
+    </form>
+
+    <div id="error-msg" class="error-box"></div>
+
+    <div class="hint">
+      首次连接后将自动记住实例地址并保持登录态。<br>如需更换实例，可在顶部菜单选择「切换服务器」。
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('connect-form');
+    const input = document.getElementById('server-url');
+    const btn = document.getElementById('submit-btn');
+    const err = document.getElementById('error-msg');
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const val = input.value.trim();
+      if (!val) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>连接中...</span>';
+      err.textContent = '';
+      err.style.display = 'none';
+
+      try {
+        if (window.rakazoDesktop && typeof window.rakazoDesktop.connectInstance === 'function') {
+          const res = await window.rakazoDesktop.connectInstance(val);
+          if (res?.error) {
+            throw new Error(res.error);
+          }
+        } else if (window.mygo?.call) {
+          const res = await window.mygo.call('DesktopBridge.ConnectInstance', val);
+          if (res?.error) {
+            throw new Error(res.error);
+          }
+        } else {
+          throw new Error('桌面通信 Bridge 未就绪');
+        }
+      } catch (e) {
+        err.textContent = e.message || String(e);
+        err.style.display = 'block';
+        btn.disabled = false;
+        btn.innerHTML = '<span>连接并登录</span>';
+      }
+    };
+  </script>
+</body>
+</html>
