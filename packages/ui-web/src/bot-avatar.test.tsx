@@ -1,4 +1,8 @@
-import { ACTIVE_RUN_STATUSES } from "@rakazo/core";
+import {
+  ACTIVE_RUN_STATUSES,
+  WAITING_ON_USER_RUN_STATUSES,
+  WORKING_RUN_STATUSES,
+} from "@rakazo/core";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
@@ -171,17 +175,45 @@ describe("BotAvatar", () => {
     expect(html).toContain("rakazo-organic-avatar");
   });
 
-  it("morphs the organic body only while working", () => {
-    const morphing = (status: string) =>
-      [
-        ...renderToString(<BotAvatar color="#8B5CF6" status={status} />).matchAll(
-          /rakazo-organic-avatar-body-(idle|working)"[^>]*>(<animate)?/g,
-        ),
-      ]
-        .filter((match) => match[2])
-        .map((match) => match[1]);
-    expect(morphing("idle")).toEqual([]);
-    expect(morphing("running")).toEqual(["working"]);
+  describe("organic avatar motion", () => {
+    const motion = (status: string, size?: number) =>
+      renderToString(<BotAvatar color="#8B5CF6" status={status} size={size} />).match(
+        /data-motion="(\w+)"/,
+      )?.[1];
+
+    it("sways only while the bot is working", () => {
+      expect(motion("idle")).toBe("still");
+      expect(motion("completed")).toBe("still");
+      for (const status of WORKING_RUN_STATUSES) expect(motion(status)).toBe("running");
+    });
+
+    it("holds still, glowing, while the bot waits on the user", () => {
+      for (const status of WAITING_ON_USER_RUN_STATUSES) {
+        const html = renderToString(<BotAvatar color="#8B5CF6" status={status} />);
+        expect(html).toContain('data-motion="still"');
+        expect(html).toContain('data-working="true"');
+        expect(html).toContain('data-activity="waiting"');
+      }
+    });
+
+    it("keeps a small avatar still even while working", () => {
+      expect(motion("running", 20)).toBe("still");
+      expect(motion("running", 24)).toBe("still");
+      expect(motion("running", 25)).toBe("running");
+    });
+
+    it("takes its pose from the activity it is given", () => {
+      const html = renderToString(<BotAvatar color="#8B5CF6" activity="reading" />);
+      expect(html).toContain('data-activity="reading"');
+      expect(html).toContain('data-motion="running"');
+    });
+
+    it("moves nothing inside the svg", () => {
+      const html = renderToString(<BotAvatar color="#8B5CF6" status="running" />);
+      expect(html).not.toContain("<animate");
+      expect(html).not.toContain("rakazo-organic-path");
+      expect(html.match(/rakazo-organic-avatar-eyes/g)).toHaveLength(1);
+    });
   });
 
   it("draws every plain-colour bot with the organic body", () => {

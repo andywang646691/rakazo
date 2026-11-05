@@ -44,12 +44,20 @@ const BUSY_ACTIVITIES: ReadonlySet<LogoAvatarActivity> = new Set([
   "working",
 ]);
 
+/**
+ * The bot is doing work, as opposed to resting, waiting on the user or having failed. Only a
+ * busy bot's avatar keeps moving: a bot waiting on an answer holds no compute.
+ */
+export function logoAvatarBusy(activity: LogoAvatarActivity): boolean {
+  return BUSY_ACTIVITIES.has(activity);
+}
+
 /** A bot that was busy and is now at rest has just finished, and nods once. */
 export function logoAvatarFinished(
   previous: LogoAvatarActivity,
   next: LogoAvatarActivity,
 ): boolean {
-  return BUSY_ACTIVITIES.has(previous) && next === "idle";
+  return logoAvatarBusy(previous) && next === "idle";
 }
 
 export function logoAvatarNeedsAttention(activity: LogoAvatarActivity): boolean {
