@@ -44,17 +44,17 @@ test("resolves real public event shapes without pretending unknown work is think
     .last();
   const state = page.getByTestId("resolved-activity");
   for (const [label, expected] of [
-    ["Start run", "working"],
+    ["Start run", "pending"],
     ["Thinking starts", "thinking"],
-    ["Thinking ends", "working"],
+    ["Thinking ends", "pending"],
     ["Read file", "reading"],
-    ["Finish reading", "working"],
+    ["Finish reading", "pending"],
     ["Stream reply", "writing"],
     ["Use computer", "computer"],
     ["Ask for input", "waiting"],
-    ["Resume run", "working"],
+    ["Resume run", "pending"],
     ["Run fails", "error"],
-    ["Restart", "working"],
+    ["Restart", "pending"],
     ["Interrupt", "idle"],
   ]) {
     await replay.getByRole("button", { name: label, exact: true }).click();

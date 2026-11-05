@@ -29,7 +29,7 @@ async function mount(element: React.ReactElement) {
 
 it("blinks a working avatar for a moment and then opens its eyes", async () => {
   vi.spyOn(Math, "random").mockReturnValue(0);
-  const { container, unmount } = await mount(<BotAvatar color="#8B5CF6" status="running" />);
+  const { container, unmount } = await mount(<BotAvatar color="#8B5CF6" activity="reading" />);
   const svg = container.querySelector("svg")!;
   expect(svg.dataset.blink).toBeUndefined();
   await act(async () => vi.advanceTimersByTime(2700));
@@ -47,7 +47,7 @@ it("leaves a resting avatar alone and stops its timer when the last blinker goes
   expect(vi.getTimerCount()).toBe(0);
   await rest.unmount();
 
-  const busy = await mount(<BotAvatar color="#8B5CF6" status="running" />);
+  const busy = await mount(<BotAvatar color="#8B5CF6" activity="reading" />);
   expect(vi.getTimerCount()).toBeGreaterThan(0);
   await busy.unmount();
   expect(vi.getTimerCount()).toBe(0);
@@ -58,7 +58,7 @@ it("does not blink a bot that only waits on the user", async () => {
   const { container, unmount } = await mount(<BotAvatar color="#8B5CF6" status="waiting_input" />);
   await act(async () => vi.advanceTimersByTime(20_000));
   expect(container.querySelector("svg")!.dataset.blink).toBeUndefined();
-  expect(container.querySelector("svg")!.dataset.motion).toBe("still");
+  expect(container.querySelector("svg")!.dataset.phase).toBe("rest");
   await unmount();
 });
 
@@ -68,12 +68,23 @@ it("nods once when a working bot finishes, and stays still after", async () => {
   const root = createRoot(container);
   await act(async () => root.render(<BotAvatar color="#8B5CF6" activity="working" />));
   const svg = container.querySelector("svg")!;
-  expect(svg.dataset.motion).toBe("running");
+  expect(svg.dataset.phase).toBe("alive");
   await act(async () => root.render(<BotAvatar color="#8B5CF6" activity="idle" />));
-  expect(svg.dataset.motion).toBe("finished");
+  expect(svg.dataset.phase).toBe("finish");
   await act(async () => root.render(<BotAvatar color="#8B5CF6" activity="waiting" />));
-  expect(svg.dataset.motion).toBe("still");
+  expect(svg.dataset.phase).toBe("rest");
   await act(async () => root.render(<BotAvatar color="#8B5CF6" activity="error" />));
-  expect(svg.dataset.motion).toBe("still");
+  expect(svg.dataset.phase).toBe("rest");
   await act(async () => root.unmount());
+});
+
+it("shows three dots, not a blink, while a run has shown nothing yet", async () => {
+  vi.spyOn(Math, "random").mockReturnValue(0);
+  const { container, unmount } = await mount(<BotAvatar color="#8B5CF6" status="queued" />);
+  const svg = container.querySelector("svg")!;
+  expect(svg.dataset.phase).toBe("dots");
+  await act(async () => vi.advanceTimersByTime(20_000));
+  expect(svg.dataset.blink).toBeUndefined();
+  expect(vi.getTimerCount()).toBe(0);
+  await unmount();
 });

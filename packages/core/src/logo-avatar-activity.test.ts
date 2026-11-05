@@ -5,6 +5,7 @@ import {
   logoAvatarActivity,
   logoAvatarBusy,
   logoAvatarFinished,
+  logoAvatarWorkActivity,
   reduceLogoAvatarSignals,
 } from "./logo-avatar-activity.js";
 
@@ -35,7 +36,7 @@ const started = () =>
 describe("logo avatar activity from public events", () => {
   it("follows confirmed reading, reply streaming, computer use and completion", () => {
     let state = started();
-    expect(logoAvatarActivity(state)).toBe("working");
+    expect(logoAvatarActivity(state)).toBe("pending");
     state = reduceLogoAvatarSignals(
       state,
       event(2, "agent.tool.called", { name: "read_file", executionId: "read-1" }),
@@ -49,7 +50,7 @@ describe("logo avatar activity from public events", () => {
         outcome: "succeeded",
       }),
     );
-    expect(logoAvatarActivity(state)).toBe("working");
+    expect(logoAvatarActivity(state)).toBe("pending");
     state = reduceLogoAvatarSignals(
       state,
       event(4, "thread.progress", { delta: "The summary is", streaming: true }),
@@ -95,9 +96,9 @@ describe("logo avatar activity from public events", () => {
         activity: true,
       }),
     );
-    expect(logoAvatarActivity(state)).toBe("working");
+    expect(logoAvatarActivity(state)).toBe("pending");
     state = reduceLogoAvatarSignals(state, event(3, "computer.status", { state: "running" }));
-    expect(logoAvatarActivity(state)).toBe("working");
+    expect(logoAvatarActivity(state)).toBe("pending");
     state = reduceLogoAvatarSignals(
       state,
       event(4, "agent.tool.called", { name: "connector_read_something", executionId: "unknown" }),
@@ -123,7 +124,7 @@ describe("logo avatar activity from public events", () => {
       state,
       event(5, "agent.tool.completed", { executionId: "screen", outcome: "error" }),
     );
-    expect(logoAvatarActivity(state)).toBe("working");
+    expect(logoAvatarActivity(state)).toBe("pending");
   });
 
   it.each([
@@ -140,7 +141,7 @@ describe("logo avatar activity from public events", () => {
     expect(waiting.tools).toEqual([]);
     expect(
       logoAvatarActivity(reduceLogoAvatarSignals(waiting, event(4, "computer.takeover.released"))),
-    ).toBe("working");
+    ).toBe("pending");
   });
 
   it("clears a cancelled run immediately and only shows error on a failed run", () => {
@@ -164,7 +165,7 @@ describe("logo avatar activity from public events", () => {
     ).toBe(state);
     expect(
       logoAvatarActivity(reduceLogoAvatarSignals(state, event(3, "run.failed", {}, "older-run"))),
-    ).toBe("working");
+    ).toBe("pending");
   });
 
   it("keeps hidden background ticket work out of avatar activity", () => {
@@ -191,7 +192,7 @@ describe("genuine coarse thinking activity", () => {
       state,
       event(3, "thread.meta", { activity: { thinking: false } }),
     );
-    expect(logoAvatarActivity(state)).toBe("working");
+    expect(logoAvatarActivity(state)).toBe("pending");
     state = reduceLogoAvatarSignals(
       state,
       event(4, "thread.meta", { activity: { thinking: true } }),
@@ -216,12 +217,12 @@ describe("genuine coarse thinking activity", () => {
       state,
       event(8, "agent.tool.completed", { executionId: "read" }),
     );
-    expect(logoAvatarActivity(state)).toBe("working");
+    expect(logoAvatarActivity(state)).toBe("pending");
     state = reduceLogoAvatarSignals(
       state,
       event(9, "thread.meta", { activity: { thinking: true } }, "other-run"),
     );
-    expect(logoAvatarActivity(state)).toBe("working");
+    expect(logoAvatarActivity(state)).toBe("pending");
   });
   it.each([
     "run.completed",
@@ -251,7 +252,7 @@ describe("genuine coarse thinking activity", () => {
     for (const payload of [{}, { activity: { thinking: "true" } }, { text: "Thinking" }]) {
       expect(
         logoAvatarActivity(reduceLogoAvatarSignals(state, event(2, "thread.meta", payload))),
-      ).toBe("working");
+      ).toBe("pending");
     }
     const background = reduceLogoAvatarSignals(
       initialLogoAvatarSignals("bot-1"),
@@ -281,9 +282,26 @@ describe("logoAvatarFinished", () => {
 
 describe("logoAvatarBusy", () => {
   it("is true only while the bot does work", () => {
-    for (const activity of ["working", "reading", "writing", "thinking", "computer"] as const)
+    for (const activity of [
+      "pending",
+      "working",
+      "reading",
+      "writing",
+      "thinking",
+      "computer",
+    ] as const)
       expect(logoAvatarBusy(activity)).toBe(true);
     for (const activity of ["idle", "waiting", "error"] as const)
       expect(logoAvatarBusy(activity)).toBe(false);
+  });
+});
+
+describe("pending", () => {
+  it("is a run that has shown no sign of work, and the logo avatar shows it as working", () => {
+    expect(logoAvatarActivity({ ...initialLogoAvatarSignals("bot-a"), status: "queued" })).toBe(
+      "pending",
+    );
+    expect(logoAvatarWorkActivity("pending")).toBe("working");
+    expect(logoAvatarWorkActivity("reading")).toBe("reading");
   });
 });

@@ -3,6 +3,7 @@ import { t } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Bot, BotSection, Group, Me, Space, ThreadSnapshot } from "@rakazo/contracts";
 import {
+  attachAvatarHoverGaze,
   BotAvatar,
   Button,
   Collapsible,
@@ -522,6 +523,7 @@ export function SidebarRoster({
                   <div
                     key={`${item.kind}:${item.chat.id}`}
                     className="group/row relative"
+                    ref={item.kind === "bot" ? attachAvatarHoverGaze : undefined}
                     style={{
                       opacity: item.kind === "bot" && draggedBotId === item.chat.id ? 0.55 : 1,
                     }}

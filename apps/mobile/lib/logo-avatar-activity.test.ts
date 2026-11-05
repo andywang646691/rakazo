@@ -23,7 +23,7 @@ it("uses current snapshot provenance and ignores tools before its cursor", () =>
     type: "agent.tool.called",
     payload: { name: "read_file", executionId: "old" },
   });
-  expect(mobileLogoAvatarActivity.getActivity("bot-a")).toBe("working");
+  expect(mobileLogoAvatarActivity.getActivity("bot-a")).toBe("pending");
   mobileLogoAvatarActivity.apply(feed.source, {
     threadId: "thread-a",
     seq: 11,
@@ -34,14 +34,14 @@ it("uses current snapshot provenance and ignores tools before its cursor", () =>
   });
   expect(mobileLogoAvatarActivity.getActivity("bot-a")).toBe("reading");
   rememberMobileAvatarSnapshot({ ...snapshot, cursor: 12 });
-  expect(mobileLogoAvatarActivity.getActivity("bot-a")).toBe("working");
+  expect(mobileLogoAvatarActivity.getActivity("bot-a")).toBe("pending");
   mobileLogoAvatarActivity.resetSource(feed.source);
-  expect(mobileLogoAvatarActivity.getActivity("bot-a", "running")).toBe("working");
+  expect(mobileLogoAvatarActivity.getActivity("bot-a", "running")).toBe("pending");
 });
 it("does not restore a stale snapshot as idle on reconnect", () => {
   rememberMobileAvatarSnapshot({ ...snapshot, run: null });
   const feed = beginMobileAvatarFeed({ botId: "bot-a" }, 15);
-  expect(mobileLogoAvatarActivity.getActivity("bot-a", "running")).toBe("working");
+  expect(mobileLogoAvatarActivity.getActivity("bot-a", "running")).toBe("pending");
   mobileLogoAvatarActivity.resetSource(feed.source);
 });
 it("cannot bring an older response or a previous session into the next feed", () => {

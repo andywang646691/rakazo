@@ -66,6 +66,7 @@ export function ChatHeader({
             identity={active.id}
             size={32}
             status={active.status}
+            still
             className="size-8"
           />
         ) : null}

@@ -14,6 +14,8 @@ export interface LogoAvatarEvent {
 /** Activity derives only from explicit public run/tool/provider lifecycle events. */
 export type LogoAvatarActivity =
   | "idle"
+  /** A run is accepted but has shown no sign of work yet. */
+  | "pending"
   | "reading"
   | "writing"
   | "thinking"
@@ -28,7 +30,15 @@ export function botAvatarActivity(
   activity: LogoAvatarActivity,
 ): LogoAvatarActivity {
   if (bot.archivedAt || !usesLogoAvatar(bot)) return "idle";
-  return activity;
+  return logoAvatarWorkActivity(activity);
+}
+
+/**
+ * The logo avatar has no "pending" look: until a run shows what it is doing it just works.
+ * Only the default avatar tells the two apart.
+ */
+export function logoAvatarWorkActivity(activity: LogoAvatarActivity): LogoAvatarActivity {
+  return activity === "pending" ? "working" : activity;
 }
 
 export function usesLogoAvatar(bot: { avatarSet?: string; color: string }): boolean {
@@ -37,6 +47,7 @@ export function usesLogoAvatar(bot: { avatarSet?: string; color: string }): bool
 }
 
 const BUSY_ACTIVITIES: ReadonlySet<LogoAvatarActivity> = new Set([
+  "pending",
   "reading",
   "writing",
   "thinking",
@@ -117,7 +128,7 @@ export function logoAvatarActivity(signals: LogoAvatarSignals): LogoAvatarActivi
   if (tool) return "working";
   if (signals.composing) return "writing";
   if (signals.thinking) return "thinking";
-  return "working";
+  return "pending";
 }
 
 /**

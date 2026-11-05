@@ -7,6 +7,7 @@ import {
   logoAvatarEyeInk,
   logoAvatarFinished,
   logoAvatarTraits,
+  logoAvatarWorkActivity,
 } from "@rakazo/core";
 import { botEyeColor, tokens } from "@rakazo/ui-tokens";
 import type { CSSProperties } from "react";
@@ -22,7 +23,7 @@ import "./logo-avatar.css";
 const eyes = LOGO_AVATAR_EYES;
 
 export const LogoAvatar = memo(function LogoAvatar({
-  activity = "idle",
+  activity: liveActivity = "idle",
   size = 38,
   avatarValue,
   identity,
@@ -41,6 +42,7 @@ export const LogoAvatar = memo(function LogoAvatar({
   followPointer?: boolean;
   className?: string;
 }) {
+  const activity = logoAvatarWorkActivity(liveActivity);
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const parsed = useMemo(
     () => (avatarValue ? parseBotAvatarValue(avatarValue) : null),

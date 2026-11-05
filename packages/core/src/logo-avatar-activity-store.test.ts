@@ -27,11 +27,11 @@ describe("live logo avatar activity store", () => {
     s.resetSource("chat");
     expect(s.getActivity("bot-a")).toBe("reading");
     s.apply("call", event(2, "agent.tool.completed", { executionId: "read" }));
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
     s.resetSource("call");
     s.hydrate("reconnect", snapshot(2));
     s.apply("reconnect", event(1, "agent.tool.called", { name: "read_file", executionId: "read" }));
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
   });
   it("tracks concurrent runs and restores another live tool after completion", () => {
     const s = createLogoAvatarActivityStore();
@@ -46,7 +46,7 @@ describe("live logo avatar activity store", () => {
     s.apply("chat", event(5, "run.completed", {}, "run-b"));
     expect(s.getActivity("bot-a")).toBe("reading");
     s.apply("chat", event(6, "agent.tool.completed", { executionId: "read" }));
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
     s.apply("chat", event(7, "run.cancelled"));
     expect(s.getActivity("bot-a")).toBe("idle");
   });
@@ -57,23 +57,23 @@ describe("live logo avatar activity store", () => {
     s.apply("call", event(2, "agent.tool.called", { name: "read_file", executionId: "read" }));
     s.apply("call", event(3, "agent.tool.completed", { executionId: "read" }));
     s.resetSource("call");
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
     s.apply("chat", event(2, "agent.tool.called", { name: "read_file", executionId: "read" }));
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
   });
   it("reconciles reconnect snapshots without replaying old tool activity", () => {
     const s = createLogoAvatarActivityStore();
     s.hydrate("chat", snapshot(10));
     s.apply("chat", event(9, "agent.tool.called", { name: "read_file", executionId: "old" }));
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
     s.apply("chat", event(11, "agent.tool.called", { name: "read_file", executionId: "new" }));
     expect(s.getActivity("bot-a")).toBe("reading");
     s.reconcile(snapshot(11));
     expect(s.getActivity("bot-a")).toBe("reading");
     s.reconcile(snapshot(12));
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
     s.resetSource("chat");
-    expect(s.getActivity("bot-a", "running")).toBe("working");
+    expect(s.getActivity("bot-a", "running")).toBe("pending");
   });
   it("scopes cursors per thread and cleanup per connection", () => {
     const s = createLogoAvatarActivityStore();
@@ -102,16 +102,16 @@ describe("live logo avatar activity store", () => {
       "chat",
       event(1, "thread.progress", { streaming: true, activity: true, text: "Reading" }),
     );
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
     s.apply("chat", event(2, "thread.progress", { streaming: true, delta: "Reply" }));
     expect(s.getActivity("bot-a")).toBe("writing");
     s.apply("chat", event(3, "thread.message.created", { role: "bot" }));
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
   });
   it("keeps background, unknown tools and missing provenance conservative", () => {
     const s = createLogoAvatarActivityStore();
     s.apply("chat", event(1, "agent.tool.called", { name: "read_file", executionId: "read" }));
-    expect(s.getActivity("bot-a", "running")).toBe("working");
+    expect(s.getActivity("bot-a", "running")).toBe("pending");
     s.apply("chat", event(2, "run.started", { trigger: "tickets" }));
     s.apply("chat", event(3, "agent.tool.called", { name: "computer_act", executionId: "screen" }));
     expect(s.getActivity("bot-a", "running")).toBe("idle");
@@ -141,7 +141,7 @@ describe("live logo avatar activity store", () => {
     s.apply("chat", event(4, "run.failed"));
     expect(s.getActivity("bot-a")).toBe("error");
     s.apply("chat", event(5, "run.started", { trigger: "user" }, "new"));
-    expect(s.getActivity("bot-a")).toBe("working");
+    expect(s.getActivity("bot-a")).toBe("pending");
   });
 });
 
@@ -162,14 +162,14 @@ it("retains genuine thinking across duplicate owners, resets on fresh snapshots 
   s.resetSource("chat");
   expect(s.getActivity("bot-a")).toBe("thinking");
   s.reconcile(snapshot(5));
-  expect(s.getActivity("bot-a")).toBe("working");
+  expect(s.getActivity("bot-a")).toBe("pending");
   s.apply("call", event(4, "thread.meta", { activity: { thinking: true } }));
-  expect(s.getActivity("bot-a")).toBe("working");
+  expect(s.getActivity("bot-a")).toBe("pending");
   s.apply("call", event(6, "thread.meta", { activity: { thinking: true } }));
   expect(s.getActivity("bot-a")).toBe("thinking");
   s.resetSource("call");
   s.hydrate("reconnect", snapshot(6));
-  expect(s.getActivity("bot-a")).toBe("working");
+  expect(s.getActivity("bot-a")).toBe("pending");
   s.clear();
   expect(s.getActivity("bot-a")).toBe("idle");
 });
@@ -177,7 +177,7 @@ it("retains genuine thinking across duplicate owners, resets on fresh snapshots 
 it("lets an idle observed chat retain generic work reported elsewhere", () => {
   const s = createLogoAvatarActivityStore();
   s.hydrate("idle-dm", { threadId: "dm", botId: "bot-a", cursor: 0, run: null });
-  expect(s.getActivity("bot-a", "running")).toBe("working");
+  expect(s.getActivity("bot-a", "running")).toBe("pending");
   expect(s.getActivity("bot-a", "waiting_input")).toBe("waiting");
   expect(s.getActivity("bot-a", "failed")).toBe("error");
   expect(s.getActivity("bot-a", "idle")).toBe("idle");
@@ -185,7 +185,7 @@ it("lets an idle observed chat retain generic work reported elsewhere", () => {
   s.apply("group", event(1, "agent.tool.called", { name: "read_file", executionId: "read" }));
   expect(s.getActivity("bot-a", "running")).toBe("reading");
   s.apply("group", event(2, "run.completed"));
-  expect(s.getActivity("bot-a", "running")).toBe("working");
+  expect(s.getActivity("bot-a", "running")).toBe("pending");
   expect(s.getActivity("bot-a", "idle")).toBe("idle");
 });
 
@@ -196,6 +196,6 @@ it("publishes a background-only fallback change without exposing its activity", 
   let notifications = 0;
   s.subscribe(() => notifications++);
   s.hydrate("chat", { ...snapshot(2), run: null });
-  expect(s.getActivity("bot-a", "running")).toBe("working");
+  expect(s.getActivity("bot-a", "running")).toBe("pending");
   expect(notifications).toBe(1);
 });
