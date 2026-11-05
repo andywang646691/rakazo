@@ -91,49 +91,6 @@ body,
   );
 }
 
-.chat-header-frost {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--background) 70%, transparent),
-    transparent
-  );
-}
-
-.chat-header-frost > span {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  pointer-events: none;
-  -webkit-backdrop-filter: blur(var(--frost-blur));
-  backdrop-filter: blur(var(--frost-blur));
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
-}
-
-.chat-header-frost > span[data-frost="1"] {
-  height: 100%;
-  --frost-blur: 1px;
-}
-
-.chat-header-frost > span[data-frost="2"] {
-  height: 78%;
-  --frost-blur: 3px;
-}
-
-.chat-header-frost > span[data-frost="3"] {
-  height: 52%;
-  --frost-blur: 8px;
-}
-
-.chat-header-frost > span[data-frost="4"] {
-  height: 30%;
-  --frost-blur: 16px;
-}
-
 /* macOS paints appearance:button at the native control height, so the desktop window
    flattens this pill. The explicit box keeps it identical to the browser. */
 .bot-name-capsule {

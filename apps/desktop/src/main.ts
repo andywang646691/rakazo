@@ -228,7 +228,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       spellcheck: false,
-      backgroundThrottling: false,
+      backgroundThrottling: true,
     },
   });
 

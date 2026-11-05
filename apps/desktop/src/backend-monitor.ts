@@ -1,5 +1,6 @@
 import type { BrowserWindow } from "electron";
-import { Notification, session } from "electron";
+import { app, Notification, session } from "electron";
+import { unreadBadgeCount } from "./unread-badge";
 
 export interface ChatAlert {
   kind: "completion" | "failure" | "help" | "takeover";
@@ -18,6 +19,7 @@ export class BackendMonitor {
   private abortController: AbortController | null = null;
   private pollTimer: NodeJS.Timeout | null = null;
   private lastWorkingState: boolean = false;
+  private lastBadgeCount: number | null = null;
   private onStatusChangeCallback: ((isWorking: boolean) => void) | null = null;
   private getMainWindow: (() => BrowserWindow | null) | null = null;
 
@@ -53,6 +55,7 @@ export class BackendMonitor {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
     }
+    this.publishBadge(0);
     console.log("[BackendMonitor] 主进程独立监听已停止");
   }
 
@@ -81,7 +84,10 @@ export class BackendMonitor {
   private async checkStatus() {
     try {
       const cookieHeader = await this.getCookieHeader();
-      if (!cookieHeader) return;
+      if (!cookieHeader) {
+        this.publishBadge(0);
+        return;
+      }
 
       const headers: Record<string, string> = {
         "content-type": "application/json",
@@ -99,15 +105,17 @@ export class BackendMonitor {
 
       if (!res.ok) {
         if (res.status === 401) {
-          // 未登录
+          this.publishBadge(0);
           return;
         }
         return;
       }
 
       const data = (await res.json()) as any;
-      const current = data?.json?.current;
+      const navigation = data?.json;
+      const current = navigation?.current;
       if (!current) return;
+      this.publishBadge(unreadBadgeCount(navigation));
 
       if (current.id && current.id !== this.currentSpaceId) {
         this.currentSpaceId = current.id;
@@ -126,6 +134,12 @@ export class BackendMonitor {
     } catch (_err: any) {
       // 网络偶发波动，不阻断主流程
     }
+  }
+
+  private publishBadge(count: number) {
+    if (this.lastBadgeCount === count) return;
+    this.lastBadgeCount = count;
+    if (typeof app.setBadgeCount === "function") app.setBadgeCount(count);
   }
 
   private async startAlertStream() {
