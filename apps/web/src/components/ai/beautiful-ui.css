@@ -3,14 +3,6 @@
    Colours come from the shared semantic tokens; keyframes are ported
    verbatim with a bui- prefix to avoid collisions. */
 
-@keyframes bui-shimmer-text {
-  0% {
-    background-position: 150%;
-  }
-  100% {
-    background-position: -50%;
-  }
-}
 @keyframes bui-pixel-on {
   0%,
   100% {

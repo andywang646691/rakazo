@@ -55,3 +55,4 @@ export { cn } from "./lib/utils.js";
 export { LogoAvatar } from "./logo-avatar.js";
 export { ModelThinkingOptions } from "./model-thinking-options.js";
 export { SectionHeading } from "./section-heading.js";
+export { TextShimmer } from "./text-shimmer.js";

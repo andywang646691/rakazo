@@ -1,21 +1,12 @@
-import { cn } from "@rakazo/ui-web";
+import { cn, TextShimmer } from "@rakazo/ui-web";
 import { useEffect, useState } from "react";
 import "./beautiful-ui.css";
 
 /* Beautiful UI primitives — hand-ported from beautifului.dev
    (github.com/TurboKach/ai-native-react-components, MIT © 2026 Turbo).
    The upstream components are demo showcases; these ports keep their visual
-   and motion language (pixel-grid loader, shimmer sweep, pop-in success) and
+   and motion language (pixel-grid loader, pop-in success) and
    expose real props. */
-
-/** A light sweep travelling across a text label. */
-export function Shimmer({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="animate-[bui-shimmer-text_1.4s_linear_infinite] bg-linear-to-r from-muted-foreground from-35% via-foreground via-50% to-muted-foreground to-65% bg-size-[200%_100%] bg-clip-text text-transparent">
-      {children}
-    </span>
-  );
-}
 
 // Chevron wavefront: each 3×3 cell fires by column distance from the center row.
 const CHEVRON_DELAYS = Array.from({ length: 9 }, (_, i) => {
@@ -58,7 +49,7 @@ function DefaultLoadingState({ label, startedAt }: { label: string; startedAt?: 
         ))}
       </span>
       <span className="text-[13.5px] font-medium">
-        <Shimmer>{label}</Shimmer>
+        <TextShimmer>{label}</TextShimmer>
       </span>
       <span className="font-mono text-[12px] tabular-nums text-muted-foreground">{elapsed}</span>
     </>
