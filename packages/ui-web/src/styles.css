@@ -202,77 +202,118 @@
   opacity: 1;
 }
 
+/*
+ * Eyes. The pose is a resting offset and lid for what the bot is doing, plus the pointer when the
+ * avatar follows it (--logo-gaze-x/y, -1 to 1, set by useAvatarGaze). Nothing here loops: it only
+ * transitions when the pose changes. Units are the avatar's own view box (120 across).
+ */
+.rakazo-organic-avatar-pose,
 .rakazo-organic-avatar-eyes {
-  transition: opacity 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.rakazo-organic-avatar-eyes-working {
-  opacity: 0;
+.rakazo-organic-avatar-pose {
+  --pose-x: 0px;
+  --pose-y: 0px;
+  --pose-lid: 1;
+  transform: translate(
+      calc(var(--pose-x) + var(--logo-gaze-x, 0) * 6px),
+      calc(var(--pose-y) + var(--logo-gaze-y, 0) * 5px)
+    )
+    scaleY(var(--pose-lid));
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.rakazo-organic-avatar[data-working="true"] .rakazo-organic-avatar-eyes-idle {
-  opacity: 0;
+.rakazo-organic-avatar[data-activity="thinking"] .rakazo-organic-avatar-pose {
+  --pose-x: -4px;
+  --pose-y: -5px;
+  --pose-lid: 0.85;
 }
 
-.rakazo-organic-avatar[data-working="true"] .rakazo-organic-avatar-eyes-working {
-  opacity: 1;
+.rakazo-organic-avatar[data-activity="reading"] .rakazo-organic-avatar-pose {
+  --pose-x: -7px;
+  --pose-y: -3px;
+  --pose-lid: 0.82;
 }
 
-.rakazo-organic-avatar[data-eye-pattern="0"] .rakazo-organic-avatar-eyes-working {
-  animation: rakazo-organic-eyes-loop-0 6.6s ease-in-out infinite;
+.rakazo-organic-avatar[data-activity="writing"] .rakazo-organic-avatar-pose {
+  --pose-y: 7px;
+  --pose-lid: 0.7;
 }
 
-.rakazo-organic-avatar[data-eye-pattern="1"] .rakazo-organic-avatar-eyes-working {
-  animation: rakazo-organic-eyes-loop-1 7.2s ease-in-out -1.4s infinite;
+.rakazo-organic-avatar[data-activity="computer"] .rakazo-organic-avatar-pose {
+  --pose-lid: 1.1;
 }
 
-.rakazo-organic-avatar[data-eye-pattern="2"] .rakazo-organic-avatar-eyes-working {
-  animation: rakazo-organic-eyes-loop-2 6.1s ease-in-out -3.2s infinite;
+.rakazo-organic-avatar[data-activity="waiting"] .rakazo-organic-avatar-pose {
+  --pose-lid: 0.9;
 }
 
-.rakazo-organic-avatar[data-eye-pattern="3"] .rakazo-organic-avatar-eyes-working {
-  animation: rakazo-organic-eyes-loop-3 7.8s ease-in-out -2.1s infinite;
+.rakazo-organic-avatar[data-activity="error"] .rakazo-organic-avatar-pose {
+  --pose-y: 3px;
+  --pose-lid: 0.7;
 }
 
-/* Durations mirror @rakazo/core WORKING_AVATAR_DURATIONS_MS (avatar-motion). */
-.rakazo-organic-avatar[data-shape-family="0"] .rakazo-organic-avatar-body-working {
-  animation: rakazo-organic-float 1.8s ease-in-out infinite;
+/* A blink is a brief class toggle from one shared timer (useAvatarBlink), not a looping animation. */
+.rakazo-organic-avatar-eyes {
+  transition: transform 70ms ease-in;
 }
 
-.rakazo-organic-avatar[data-shape-family="1"] .rakazo-organic-avatar-body-working {
-  animation: rakazo-organic-stretch 1.35s ease-in-out infinite;
+.rakazo-organic-avatar[data-blink="true"] .rakazo-organic-avatar-eyes {
+  transform: scaleY(0.1);
 }
 
-.rakazo-organic-avatar[data-shape-family="2"] .rakazo-organic-avatar-body-working,
-.rakazo-organic-avatar[data-shape-family="8"] .rakazo-organic-avatar-body-working {
-  animation: rakazo-organic-sway 1.6s ease-in-out infinite;
+/*
+ * Motion. A busy bot sways by animating the outer svg: a transform on a composited element is
+ * moved by the compositor, where the same motion on a path inside the svg repaints the page every
+ * frame. Each family keeps its own keyframes and period; the step counts hold the update rate near
+ * 30 a second, which halves the work again. Only a running avatar gets its own layer. An avatar
+ * that is offscreen, in a hidden tab or under Reduce Motion is never "running", so it draws nothing.
+ */
+.rakazo-organic-avatar {
+  transform-origin: center;
 }
 
-.rakazo-organic-avatar[data-shape-family="3"] .rakazo-organic-avatar-body-working,
-.rakazo-organic-avatar[data-shape-family="4"] .rakazo-organic-avatar-body-working {
-  animation: rakazo-organic-turn 2.4s ease-in-out infinite;
+.rakazo-organic-avatar[data-motion="running"] {
+  will-change: transform;
 }
 
-.rakazo-organic-avatar[data-shape-family="5"] .rakazo-organic-avatar-body-working,
-.rakazo-organic-avatar[data-shape-family="9"] .rakazo-organic-avatar-body-working {
-  animation: rakazo-organic-squash 1.35s ease-in-out infinite;
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="0"] {
+  animation: rakazo-organic-float 1.8s steps(27) infinite;
 }
 
-.rakazo-organic-avatar[data-shape-family="6"] .rakazo-organic-avatar-body-working {
-  animation: rakazo-organic-pulse 1.1s ease-in-out infinite;
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="1"] {
+  animation: rakazo-organic-stretch 1.35s steps(20) infinite;
 }
 
-.rakazo-organic-avatar[data-shape-family="7"] .rakazo-organic-avatar-body-working {
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="2"],
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="8"] {
+  animation: rakazo-organic-sway 1.6s steps(24) infinite;
+}
+
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="3"],
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="4"] {
+  animation: rakazo-organic-turn 2.4s steps(36) infinite;
+}
+
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="5"],
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="9"] {
+  animation: rakazo-organic-squash 1.35s steps(20) infinite;
+}
+
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="6"] {
+  animation: rakazo-organic-pulse 1.1s steps(16) infinite;
+}
+
+.rakazo-organic-avatar[data-motion="running"][data-shape-family="7"] {
   transform-origin: center 20%;
-  animation: rakazo-organic-ring 1.35s ease-in-out infinite;
+  animation: rakazo-organic-ring 1.35s steps(14) infinite;
 }
 
-/* Idle, offscreen and hidden avatars hold still: SVG motion repaints on the main thread. */
-.rakazo-organic-avatar[data-paused="true"] .rakazo-organic-avatar-body,
-.rakazo-organic-avatar[data-paused="true"] .rakazo-organic-avatar-eyes,
-.rakazo-organic-avatar[data-working="false"] .rakazo-organic-avatar-body-working,
-.rakazo-organic-avatar[data-working="false"] .rakazo-organic-avatar-eyes-working {
-  animation-play-state: paused;
+/* A bot that has just finished nods once, then holds still. */
+.rakazo-organic-avatar[data-motion="finished"] {
+  animation: rakazo-organic-nod 900ms steps(27) 1;
 }
 
 @keyframes rakazo-organic-float {
@@ -348,106 +389,19 @@
   }
 }
 
-@keyframes rakazo-organic-eyes-loop-0 {
+@keyframes rakazo-organic-nod {
   0%,
   100% {
-    transform: translate(-9%, 1%) scaleY(0.94);
+    transform: translateY(0) scaleY(1);
   }
-  18% {
-    transform: translate(9%, -2%) scaleY(1.04);
-  }
-  34% {
-    transform: translate(0, -8%) scale(1.08);
+  26% {
+    transform: translateY(4px) scaleY(0.96);
   }
   48% {
-    transform: scale(1.12, 0.82);
+    transform: translateY(-1px) scaleY(1.01);
   }
-  51% {
-    transform: scale(1.05, 0.08);
-  }
-  54% {
-    transform: scale(1.12, 0.9);
-  }
-  72% {
-    transform: translate(-5%, 7%) scaleY(0.9);
-  }
-  86% {
-    transform: translate(7%, 3%);
-  }
-}
-
-@keyframes rakazo-organic-eyes-loop-1 {
-  0%,
-  100% {
-    transform: translate(0, -8%) scale(1.06);
-  }
-  16% {
-    transform: translate(8%, 2%);
-  }
-  31% {
-    transform: translate(0, 8%) scaleY(0.9);
-  }
-  46% {
-    transform: translate(-8%, 2%);
-  }
-  61% {
-    transform: scale(0.88, 1.1);
-  }
-  76% {
-    transform: translateY(-7%) scaleY(1.08);
-  }
-  88% {
-    transform: translateY(6%) scale(1.08, 0.86);
-  }
-}
-
-@keyframes rakazo-organic-eyes-loop-2 {
-  0%,
-  100% {
-    transform: scale(0.9, 1.08);
-  }
-  20% {
-    transform: scale(1.14, 0.84);
-  }
-  24% {
-    transform: scale(1.08, 0.08);
-  }
-  28% {
-    transform: scale(1.02);
-  }
-  45% {
-    transform: translate(-9%, -3%) scaleY(0.94);
-  }
-  62% {
-    transform: translate(9%, 2%) scaleY(1.05);
-  }
-  80% {
-    transform: translate(0, -8%) scale(1.06);
-  }
-}
-
-@keyframes rakazo-organic-eyes-loop-3 {
-  0%,
-  100% {
-    transform: translateY(7%) scaleY(0.9);
-  }
-  14% {
-    transform: translateY(-9%) scaleY(1.08);
-  }
-  30% {
-    transform: translate(8%, -2%);
-  }
-  47% {
-    transform: translate(-8%, 3%) scaleY(0.94);
-  }
-  63% {
-    transform: scale(1.12, 0.82);
-  }
-  78% {
-    transform: translate(0, -7%) scale(0.9, 1.08);
-  }
-  91% {
-    transform: translate(0, 5%) scale(1.06, 0.9);
+  70% {
+    transform: translateY(2px) scaleY(0.98);
   }
 }
 
@@ -462,14 +416,11 @@
     transition: none;
   }
 
-  .rakazo-organic-avatar[data-shape-family] .rakazo-organic-avatar-body {
-    animation: none;
-    d: var(--rakazo-organic-path);
-    transition: none;
-  }
-
-  .rakazo-organic-avatar[data-eye-pattern] .rakazo-organic-avatar-eyes {
-    animation: none;
+  .rakazo-organic-avatar,
+  .rakazo-organic-avatar-body,
+  .rakazo-organic-avatar-pose,
+  .rakazo-organic-avatar-eyes {
+    animation: none !important;
     transition: none;
   }
 }

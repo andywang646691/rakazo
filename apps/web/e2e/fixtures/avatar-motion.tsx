@@ -58,5 +58,15 @@ createRoot(document.getElementById("root")!).render(
       <span>Idle shape</span>
     </div>
     <OrganicExample />
+    <div className="avatar-example">
+      <BotAvatar
+        color="#8B5CF6"
+        identity="waiting-organic"
+        size={120}
+        status="waiting_input"
+        className="avatar-organic-waiting"
+      />
+      <span>Waiting</span>
+    </div>
   </>,
 );

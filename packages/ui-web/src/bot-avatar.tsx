@@ -2,12 +2,15 @@ import type { BotAvatarSet } from "@rakazo/contracts";
 import type { AvatarEyes, BotColorDef, LogoAvatarActivity } from "@rakazo/core";
 import {
   ACTIVE_RUN_STATUSES,
+  AVATAR_STILL_MAX_SIZE,
   avatarEyeRects,
   avatarIdentitySeed,
   BOT_AVATAR_COLORS,
   BOT_COLOR_LIST,
   botEyeTone,
   DEFAULT_BOT_AVATAR_COLOR,
+  logoAvatarBusy,
+  logoAvatarFinished,
   ORGANIC_AVATAR_EYES,
   ORGANIC_AVATAR_VIEWBOX,
   organicAvatarEyeTilt,
@@ -20,8 +23,10 @@ import {
   shippedBotAvatarShapePath,
 } from "@rakazo/core";
 import type { ComponentProps, CSSProperties } from "react";
-import { memo, useEffect, useId, useMemo, useSyncExternalStore } from "react";
+import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useBotAvatarActivity } from "./bot-avatar-activity.js";
+import { useAvatarBlink } from "./hooks/use-avatar-blink.js";
+import { useAvatarGaze } from "./hooks/use-avatar-gaze.js";
 import { useAvatarMotionVisibility } from "./hooks/use-avatar-motion-visibility.js";
 import { cn } from "./lib/utils.js";
 import { LogoAvatar } from "./logo-avatar.js";
@@ -162,12 +167,16 @@ export const BotAvatar = memo(function BotAvatar({
     );
   }
   if (parsed.shapeIndex === undefined) {
+    const Avatar = activity === undefined ? LiveOrganicAvatar : OrganicAvatar;
     return (
-      <OrganicAvatar
+      <Avatar
         color={colorDef.hex}
         identity={effectiveId}
         size={size}
         isWorking={isWorking}
+        activity={activity}
+        status={status}
+        followPointer={followPointer}
         className={className}
       />
     );
@@ -253,34 +262,55 @@ function LiveLogoAvatar({
   return <LogoAvatar {...props} activity={activity} />;
 }
 
+/** Only live consumers subscribe to public activity updates, like the logo avatar. */
+function LiveOrganicAvatar({
+  status,
+  ...props
+}: ComponentProps<typeof OrganicAvatar> & { status?: string }) {
+  const activity = useBotAvatarActivity(props.identity ?? "", status);
+  return <OrganicAvatar {...props} activity={activity} />;
+}
+
+/**
+ * The default avatar. A busy bot sways (one transform on the outer svg, so the compositor moves
+ * it), the eyes take a pose for what it is doing, a finished bot nods once, and a resting one is a
+ * still picture. Nothing inside the svg animates: that would repaint the page on every frame.
+ */
 function OrganicAvatar({
   color,
   identity,
   size,
   isWorking,
+  activity,
+  followPointer = false,
   className,
 }: {
   color: string;
   identity?: string;
   size: number;
+  /** A run is active, including one waiting on the user: the body glows. */
   isWorking: boolean;
+  activity?: LogoAvatarActivity;
+  status?: string;
+  followPointer?: boolean;
   className?: string;
 }) {
-  const reducedMotion = useSyncExternalStore(
-    subscribeToReducedMotion,
-    reducedMotionSnapshot,
-    () => false,
-  );
-  const { ref, visible } = useAvatarMotionVisibility(!reducedMotion);
-  useEffect(() => {
-    // jsdom has no SMIL clock, so these are optional.
-    if (visible) ref.current?.unpauseAnimations?.();
-    else ref.current?.pauseAnimations?.();
-  }, [ref, visible]);
+  const { ref, visible, reducedMotion } = useAvatarMotionVisibility(true);
   const seed = avatarIdentitySeed(identity || color || DEFAULT_BOT_AVATAR_COLOR);
-  const duration = `${4.8 + (seed % 24) / 10}s`;
-  const shapeA = organicAvatarPath(seed);
-  const shapeB = organicAvatarPath(seed, 0.42);
+  const current = activity ?? (isWorking ? "working" : "idle");
+  const canMove = visible && !reducedMotion && size > AVATAR_STILL_MAX_SIZE;
+  const busy = canMove && logoAvatarBusy(current);
+
+  const previous = useRef(current);
+  const [finished, setFinished] = useState(false);
+  useEffect(() => {
+    const was = previous.current;
+    previous.current = current;
+    setFinished(canMove && logoAvatarFinished(was, current));
+  }, [current, canMove]);
+
+  useAvatarGaze(ref, canMove && followPointer);
+  useAvatarBlink(ref, busy || (canMove && followPointer));
 
   return (
     <svg
@@ -289,9 +319,10 @@ function OrganicAvatar({
       aria-hidden="true"
       className={cn("rakazo-organic-avatar overflow-visible select-none", className)}
       data-working={isWorking}
+      data-activity={current}
+      data-motion={busy ? "running" : finished ? "finished" : "still"}
       data-paused={!visible}
       data-shape-family={seed % 10}
-      data-eye-pattern={seed % 4}
       style={{
         width: size,
         height: size,
@@ -302,38 +333,22 @@ function OrganicAvatar({
         <path
           key={mode}
           className={`rakazo-organic-avatar-body rakazo-organic-avatar-body-${mode}`}
-          d={shapeA}
+          d={organicAvatarPath(seed)}
           fill={color}
-          style={
-            {
-              "--rakazo-organic-path": `path("${shapeA}")`,
-              filter:
-                mode === "working"
-                  ? `drop-shadow(0 0 ${Math.round(size * 0.16)}px ${color})`
-                  : "drop-shadow(0 2px 3px rgba(0,0,0,.34))",
-            } as CSSProperties
-          }
-        >
-          {/* Only a working body morphs. A late <animate> joins the svg clock mid-loop. */}
-          {!reducedMotion && mode === "working" && isWorking ? (
-            <animate
-              attributeName="d"
-              values={`${shapeA};${shapeB};${shapeA}`}
-              dur={duration}
-              repeatCount="indefinite"
-            />
-          ) : null}
-        </path>
+          style={{
+            filter:
+              mode === "working"
+                ? `drop-shadow(0 0 ${Math.round(size * 0.16)}px ${color})`
+                : "drop-shadow(0 2px 3px rgba(0,0,0,.34))",
+          }}
+        />
       ))}
       <g transform={`rotate(${organicAvatarEyeTilt(seed)})`}>
-        {(["idle", "working"] as const).map((mode) => (
-          <g
-            key={mode}
-            className={`rakazo-organic-avatar-eyes rakazo-organic-avatar-eyes-${mode} ${eyeFill(color)}`}
-          >
+        <g className="rakazo-organic-avatar-pose">
+          <g className={`rakazo-organic-avatar-eyes ${eyeFill(color)}`}>
             <BarEyes eyes={ORGANIC_AVATAR_EYES} />
           </g>
-        ))}
+        </g>
       </g>
     </svg>
   );
@@ -349,18 +364,6 @@ function eyeFill(bodyHex: string): string {
   if (tone === "dark") return "fill-foreground dark:fill-background";
   if (tone === "light") return "fill-background dark:fill-foreground";
   return "fill-background";
-}
-
-const reducedMotionMedia = "(prefers-reduced-motion: reduce)";
-
-function reducedMotionSnapshot(): boolean {
-  return window.matchMedia(reducedMotionMedia).matches;
-}
-
-function subscribeToReducedMotion(onChange: () => void): () => void {
-  const media = window.matchMedia(reducedMotionMedia);
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
 }
 
 export function BotShapePreview({

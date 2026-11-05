@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   initialLogoAvatarSignals,
   logoAvatarActivity,
+  logoAvatarBusy,
   logoAvatarFinished,
   reduceLogoAvatarSignals,
 } from "./logo-avatar-activity.js";
@@ -275,5 +276,14 @@ describe("logoAvatarFinished", () => {
     expect(logoAvatarFinished("working", "reading")).toBe(false);
     expect(logoAvatarFinished("waiting", "idle")).toBe(false);
     expect(logoAvatarFinished("error", "idle")).toBe(false);
+  });
+});
+
+describe("logoAvatarBusy", () => {
+  it("is true only while the bot does work", () => {
+    for (const activity of ["working", "reading", "writing", "thinking", "computer"] as const)
+      expect(logoAvatarBusy(activity)).toBe(true);
+    for (const activity of ["idle", "waiting", "error"] as const)
+      expect(logoAvatarBusy(activity)).toBe(false);
   });
 });
