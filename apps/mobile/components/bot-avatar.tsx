@@ -154,7 +154,8 @@ function RakazoBotAvatar({
   const resolved = botAvatarActivity(
     { color, avatarSet: "rakazo" },
     activity ??
-      (composing && (liveActivity === "working" || liveActivity === "idle")
+      (composing &&
+      (liveActivity === "working" || liveActivity === "pending" || liveActivity === "idle")
         ? "writing"
         : liveActivity),
   );

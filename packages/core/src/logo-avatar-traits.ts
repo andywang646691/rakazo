@@ -38,6 +38,7 @@ export function logoAvatarTraits(identity: string, color?: string) {
     periods: {
       idle: LOGO_AVATAR_LOOP_MS,
       working: SLOW_PERIODS[tempo]!,
+      pending: SLOW_PERIODS[tempo]!,
       reading: SLOW_PERIODS[tempo]!,
       writing: [1200, 1500, 2000][tempo]!,
       thinking: 6000,

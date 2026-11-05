@@ -26,7 +26,6 @@ import type { ComponentProps, CSSProperties } from "react";
 import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useBotAvatarActivity } from "./bot-avatar-activity.js";
 import { useAvatarBlink } from "./hooks/use-avatar-blink.js";
-import { useAvatarGaze } from "./hooks/use-avatar-gaze.js";
 import { useAvatarMotionVisibility } from "./hooks/use-avatar-motion-visibility.js";
 import { cn } from "./lib/utils.js";
 import { LogoAvatar } from "./logo-avatar.js";
@@ -89,8 +88,10 @@ export interface BotAvatarProps {
   size?: number;
   status?: string;
   identity?: string;
-  /** The eyes follow the pointer while the bot rests. */
+  /** The eyes follow the pointer while the bot rests (the logo avatar only). */
   followPointer?: boolean;
+  /** Never animate, whatever the bot is doing: a badge. */
+  still?: boolean;
   className?: string;
 }
 
@@ -102,6 +103,7 @@ export const BotAvatar = memo(function BotAvatar({
   status,
   identity = "",
   followPointer,
+  still,
   className,
 }: BotAvatarProps) {
   const id = useId().replace(/[^a-zA-Z0-9-_]/g, "");
@@ -176,7 +178,7 @@ export const BotAvatar = memo(function BotAvatar({
         isWorking={isWorking}
         activity={activity}
         status={status}
-        followPointer={followPointer}
+        still={still}
         className={className}
       />
     );
@@ -271,10 +273,13 @@ function LiveOrganicAvatar({
   return <OrganicAvatar {...props} activity={activity} />;
 }
 
+/** The phases of the default avatar; see styles.css for what each looks like. */
+export type OrganicAvatarPhase = "rest" | "dots" | "alive" | "finish";
+
 /**
- * The default avatar. A busy bot sways (one transform on the outer svg, so the compositor moves
- * it), the eyes take a pose for what it is doing, a finished bot nods once, and a resting one is a
- * still picture. Nothing inside the svg animates: that would repaint the page on every frame.
+ * The default avatar. At rest it is a still picture. A run that has just been accepted turns it
+ * into three dots; once the run shows what it is doing the avatar comes back and breathes slowly,
+ * blinking now and then; when the run ends it nods once. Everything else is a rest.
  */
 function OrganicAvatar({
   color,
@@ -282,7 +287,7 @@ function OrganicAvatar({
   size,
   isWorking,
   activity,
-  followPointer = false,
+  still = false,
   className,
 }: {
   color: string;
@@ -292,14 +297,14 @@ function OrganicAvatar({
   isWorking: boolean;
   activity?: LogoAvatarActivity;
   status?: string;
-  followPointer?: boolean;
+  /** Never animate: a badge. */
+  still?: boolean;
   className?: string;
 }) {
   const { ref, visible, reducedMotion } = useAvatarMotionVisibility(true);
   const seed = avatarIdentitySeed(identity || color || DEFAULT_BOT_AVATAR_COLOR);
   const current = activity ?? (isWorking ? "working" : "idle");
-  const canMove = visible && !reducedMotion && size > AVATAR_STILL_MAX_SIZE;
-  const busy = canMove && logoAvatarBusy(current);
+  const canMove = !still && visible && !reducedMotion && size > AVATAR_STILL_MAX_SIZE;
 
   const previous = useRef(current);
   const [finished, setFinished] = useState(false);
@@ -309,8 +314,16 @@ function OrganicAvatar({
     setFinished(canMove && logoAvatarFinished(was, current));
   }, [current, canMove]);
 
-  useAvatarGaze(ref, canMove && followPointer);
-  useAvatarBlink(ref, busy || (canMove && followPointer));
+  const phase: OrganicAvatarPhase = !canMove
+    ? "rest"
+    : current === "pending"
+      ? "dots"
+      : logoAvatarBusy(current)
+        ? "alive"
+        : finished
+          ? "finish"
+          : "rest";
+  useAvatarBlink(ref, phase === "alive");
 
   return (
     <svg
@@ -320,36 +333,53 @@ function OrganicAvatar({
       className={cn("rakazo-organic-avatar overflow-visible select-none", className)}
       data-working={isWorking}
       data-activity={current}
-      data-motion={busy ? "running" : finished ? "finished" : "still"}
-      data-paused={!visible}
+      data-phase={phase}
       data-shape-family={seed % 10}
+      data-paused={!visible}
       style={{
         width: size,
         height: size,
         flex: "none",
       }}
     >
-      {(["idle", "working"] as const).map((mode) => (
-        <path
-          key={mode}
-          className={`rakazo-organic-avatar-body rakazo-organic-avatar-body-${mode}`}
-          d={organicAvatarPath(seed)}
-          fill={color}
-          style={{
-            filter:
-              mode === "working"
-                ? `drop-shadow(0 0 ${Math.round(size * 0.16)}px ${color})`
-                : "drop-shadow(0 2px 3px rgba(0,0,0,.34))",
-          }}
-        />
-      ))}
-      <g transform={`rotate(${organicAvatarEyeTilt(seed)})`}>
-        <g className="rakazo-organic-avatar-pose">
-          <g className={`rakazo-organic-avatar-eyes ${eyeFill(color)}`}>
-            <BarEyes eyes={ORGANIC_AVATAR_EYES} />
+      <g className="rakazo-organic-avatar-turn">
+        {(["idle", "working"] as const).map((mode) => (
+          <path
+            key={mode}
+            className={`rakazo-organic-avatar-body rakazo-organic-avatar-body-${mode}`}
+            d={organicAvatarPath(seed)}
+            fill={color}
+            style={{
+              filter:
+                mode === "working"
+                  ? `drop-shadow(0 0 ${Math.round(size * 0.16)}px ${color})`
+                  : "drop-shadow(0 2px 3px rgba(0,0,0,.34))",
+            }}
+          />
+        ))}
+        <g transform={`rotate(${organicAvatarEyeTilt(seed)})`}>
+          <g className="rakazo-organic-avatar-pose">
+            <g className={`rakazo-organic-avatar-eyes ${eyeFill(color)}`}>
+              <BarEyes eyes={ORGANIC_AVATAR_EYES} />
+            </g>
           </g>
         </g>
       </g>
+      <circle
+        className="rakazo-organic-avatar-dot rakazo-organic-avatar-dot-side rakazo-organic-avatar-dot-left"
+        r={9}
+        fill={color}
+      />
+      <circle
+        className="rakazo-organic-avatar-dot rakazo-organic-avatar-dot-side rakazo-organic-avatar-dot-right"
+        r={9}
+        fill={color}
+      />
+      <circle
+        className="rakazo-organic-avatar-dot rakazo-organic-avatar-dot-center"
+        r={14}
+        fill={color}
+      />
     </svg>
   );
 }

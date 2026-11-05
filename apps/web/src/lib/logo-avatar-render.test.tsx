@@ -67,10 +67,11 @@ async function mount(status?: string) {
   );
 }
 const live = () => container.querySelector<SVGSVGElement>('[data-testid="live"] svg')!;
-it("projects production feed events into the live avatar and subscribes only live Rakazo consumers", async () => {
+it("projects production feed events into the live avatar and subscribes only live consumers", async () => {
   const subscribe = vi.spyOn(webLogoAvatarActivity, "subscribe");
   await mount();
-  expect(subscribe).toHaveBeenCalledTimes(1);
+  // The Rakazo-set avatar and the default one follow the run; photo, shape and explicit ones do not.
+  expect(subscribe).toHaveBeenCalledTimes(2);
   expect(live().dataset.activity).toBe("idle");
   await act(async () => webLogoAvatarActivity.hydrate("chat", snapshot));
   const steps = [
@@ -99,7 +100,7 @@ it("projects production feed events into the live avatar and subscribes only liv
     expect(live().dataset.activity).toBe(expected);
     expect(live().dataset.working).toBe(String(expected !== "idle" && expected !== "error"));
   }
-  expect(subscribe).toHaveBeenCalledTimes(1);
+  expect(subscribe).toHaveBeenCalledTimes(2);
 });
 it("retains the live pose through overlapping feed hydration, hidden updates and reconnect", async () => {
   await mount();

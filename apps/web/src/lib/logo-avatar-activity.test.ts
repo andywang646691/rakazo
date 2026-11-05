@@ -33,12 +33,12 @@ it("hydrates honest generic work and clears exact activity when a feed ends", as
       yield tool;
     })(),
   );
-  expect(webLogoAvatarActivity.getActivity("bot-a")).toBe("working");
+  expect(webLogoAvatarActivity.getActivity("bot-a")).toBe("pending");
   for await (const event of feed) {
     webLogoAvatarActivity.apply("chat", event);
     expect(webLogoAvatarActivity.getActivity("bot-a")).toBe("reading");
   }
-  expect(webLogoAvatarActivity.getActivity("bot-a", "running")).toBe("working");
+  expect(webLogoAvatarActivity.getActivity("bot-a", "running")).toBe("pending");
 });
 it("drops stale activity on abort and on failed reconnect", async () => {
   const abort = new AbortController();
@@ -50,13 +50,13 @@ it("drops stale activity on abort and on failed reconnect", async () => {
   webLogoAvatarActivity.apply("chat", tool);
   expect(webLogoAvatarActivity.getActivity("bot-a")).toBe("reading");
   abort.abort();
-  expect(webLogoAvatarActivity.getActivity("bot-a", "running")).toBe("working");
+  expect(webLogoAvatarActivity.getActivity("bot-a", "running")).toBe("pending");
   await expect(
     openLogoAvatarActivityFeed("chat", snapshot, 10, new AbortController().signal, async () => {
       throw new Error("offline");
     }),
   ).rejects.toThrow("offline");
-  expect(webLogoAvatarActivity.getActivity("bot-a", "running")).toBe("working");
+  expect(webLogoAvatarActivity.getActivity("bot-a", "running")).toBe("pending");
 });
 
 it("clears settled identity changes and rejects old managed feed callbacks", () => {

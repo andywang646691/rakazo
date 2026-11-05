@@ -1,3 +1,4 @@
+import type { LogoAvatarActivity } from "@rakazo/core";
 import {
   ACTIVE_RUN_STATUSES,
   WAITING_ON_USER_RUN_STATUSES,
@@ -175,43 +176,50 @@ describe("BotAvatar", () => {
     expect(html).toContain("rakazo-organic-avatar");
   });
 
-  describe("organic avatar motion", () => {
-    const motion = (status: string, size?: number) =>
-      renderToString(<BotAvatar color="#8B5CF6" status={status} size={size} />).match(
-        /data-motion="(\w+)"/,
-      )?.[1];
+  describe("organic avatar phases", () => {
+    const phase = (props: {
+      status?: string;
+      activity?: LogoAvatarActivity;
+      size?: number;
+      still?: boolean;
+    }) => renderToString(<BotAvatar color="#8B5CF6" {...props} />).match(/data-phase="(\w+)"/)?.[1];
 
-    it("sways only while the bot is working", () => {
-      expect(motion("idle")).toBe("still");
-      expect(motion("completed")).toBe("still");
-      for (const status of WORKING_RUN_STATUSES) expect(motion(status)).toBe("running");
+    it("is a still picture at rest", () => {
+      expect(phase({ status: "idle" })).toBe("rest");
+      expect(phase({ status: "completed" })).toBe("rest");
+      expect(phase({})).toBe("rest");
+    });
+
+    it("turns into dots when a run is accepted and has shown nothing yet", () => {
+      for (const status of WORKING_RUN_STATUSES) expect(phase({ status })).toBe("dots");
+      expect(phase({ activity: "pending" })).toBe("dots");
+    });
+
+    it("comes alive once the run shows what it is doing", () => {
+      for (const activity of ["thinking", "reading", "writing", "computer", "working"] as const)
+        expect(phase({ activity })).toBe("alive");
     });
 
     it("holds still, glowing, while the bot waits on the user", () => {
       for (const status of WAITING_ON_USER_RUN_STATUSES) {
         const html = renderToString(<BotAvatar color="#8B5CF6" status={status} />);
-        expect(html).toContain('data-motion="still"');
+        expect(html).toContain('data-phase="rest"');
         expect(html).toContain('data-working="true"');
-        expect(html).toContain('data-activity="waiting"');
       }
+      expect(phase({ activity: "error" })).toBe("rest");
     });
 
-    it("keeps a small avatar still even while working", () => {
-      expect(motion("running", 20)).toBe("still");
-      expect(motion("running", 24)).toBe("still");
-      expect(motion("running", 25)).toBe("running");
+    it("never animates a badge or a small avatar", () => {
+      expect(phase({ activity: "reading", still: true })).toBe("rest");
+      expect(phase({ activity: "pending", still: true })).toBe("rest");
+      expect(phase({ activity: "reading", size: 24 })).toBe("rest");
+      expect(phase({ activity: "reading", size: 25 })).toBe("alive");
     });
 
-    it("takes its pose from the activity it is given", () => {
-      const html = renderToString(<BotAvatar color="#8B5CF6" activity="reading" />);
-      expect(html).toContain('data-activity="reading"');
-      expect(html).toContain('data-motion="running"');
-    });
-
-    it("moves nothing inside the svg", () => {
+    it("moves nothing inside the svg and draws three dots", () => {
       const html = renderToString(<BotAvatar color="#8B5CF6" status="running" />);
       expect(html).not.toContain("<animate");
-      expect(html).not.toContain("rakazo-organic-path");
+      expect(html.match(/rakazo-organic-avatar-dot /g)).toHaveLength(3);
       expect(html.match(/rakazo-organic-avatar-eyes/g)).toHaveLength(1);
     });
   });

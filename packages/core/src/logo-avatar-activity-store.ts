@@ -24,15 +24,16 @@ export interface LogoAvatarActivitySnapshot {
 export function logoAvatarStatusActivity(status?: string): LogoAvatarActivity {
   if (status === "failed") return "error";
   if (status && isRunWaitingOnUser(status)) return "waiting";
-  return status && isRunWorking(status) ? "working" : "idle";
+  return status && isRunWorking(status) ? "pending" : "idle";
 }
 
 const PRIORITY: Record<LogoAvatarActivity, number> = {
-  computer: 8,
-  writing: 7,
-  reading: 6,
-  thinking: 5,
-  working: 4,
+  computer: 9,
+  writing: 8,
+  reading: 7,
+  thinking: 6,
+  working: 5,
+  pending: 4,
   waiting: 3,
   error: 2,
   idle: 1,
