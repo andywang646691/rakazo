@@ -57,7 +57,7 @@ export function SidebarHeader({
               aria-pressed={searchOpen}
               data-testid="sidebar-search-trigger"
               onClick={onSearch}
-              className="app-no-drag text-muted-foreground"
+              className="app-no-drag rounded-full text-muted-foreground"
             >
               <Search size={15} strokeWidth={1.8} aria-hidden="true" />
             </Button>
@@ -71,7 +71,7 @@ export function SidebarHeader({
             aria-pressed={activityMode}
             data-activity-mode={activityMode ? "on" : "off"}
             onClick={toggleActivityMode}
-            className={`app-no-drag ${activityMode ? "bg-accent text-foreground" : "text-muted-foreground"}`}
+            className={`app-no-drag rounded-full ${activityMode ? "bg-accent text-foreground" : "text-muted-foreground"}`}
           >
             {/* A filled bell marks Activity on, so on and hovered never look alike. */}
             <Bell
@@ -86,7 +86,7 @@ export function SidebarHeader({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="app-no-drag hidden text-muted-foreground md:inline-flex"
+            className="app-no-drag hidden rounded-full text-muted-foreground md:inline-flex"
             aria-label={toggleLabel}
             data-testid={mini ? "restore-bots-sidebar" : "minimize-bots-sidebar"}
             onClick={() => setBotsSidebarCollapsedPref(!mini)}
@@ -105,7 +105,7 @@ export function SidebarHeader({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="app-no-drag text-muted-foreground"
+                  className="app-no-drag rounded-full text-muted-foreground"
                 />
               }
               aria-label={t`Create`}

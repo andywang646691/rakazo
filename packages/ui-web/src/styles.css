@@ -8,7 +8,7 @@
 
 /* Web type: the system font; chat messages read at 15/22, other UI at Tailwind sizes. Mobile sets its own type natively. */
 @theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
     monospace;
@@ -20,7 +20,7 @@
   --text-body2: 13px;
   --text-body2--line-height: 18px;
   --text-body1: 15px;
-  --text-body1--line-height: 22px;
+  --text-body1--line-height: 24px;
   --text-heading3: 17px;
   --text-heading3--line-height: 24px;
   --text-heading3--letter-spacing: -0.008em;

@@ -20,13 +20,13 @@ test("sidebar rail keeps chats interactive and remembers a dragged width", async
   const sidebar = page.getByTestId("bots-sidebar");
   const handle = page.getByRole("separator", { name: "Resize bots sidebar" });
   const row = page.locator(`[data-roster-bot-id="${bot.id}"]`);
-  await expect(sidebar).toHaveCSS("width", "316px");
+  await expect(sidebar).toHaveCSS("width", "288px");
   await handle.hover({ position: { x: 4, y: 300 } });
   const edge = (await handle.boundingBox())!;
   await page.mouse.down();
   await expect(sidebar).toHaveCSS("transition-property", "none");
-  await page.mouse.move(edge.x + 88, edge.y + 300, { steps: 10 });
-  await expect(sidebar).toHaveCSS("width", "400px");
+  await page.mouse.move(edge.x + 112, edge.y + 300, { steps: 10 });
+  await expect(sidebar).toHaveCSS("width", "396px");
   await page.mouse.up();
   const preferredWidth = Math.round((await sidebar.boundingBox())!.width);
   expect(preferredWidth).toBeGreaterThan(390);
@@ -88,7 +88,7 @@ test("sidebar rail keeps chats interactive and remembers a dragged width", async
   await page.getByTestId("minimize-bots-sidebar").click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Open navigation" }).click();
-  await expect(sidebar).toHaveCSS("width", "316px");
+  await expect(sidebar).toHaveCSS("width", "288px");
   await expect(sidebar.getByTestId("sidebar-search-trigger")).toBeVisible();
   await expect(sidebar.getByRole("textbox", { name: "Search", exact: true })).toHaveCount(0);
   await expect(row.locator("[data-roster-bot-name]")).toBeVisible();
@@ -108,7 +108,7 @@ test("sidebar resize follows RTL and reduced motion", async ({ page }, testInfo)
   await expect(sidebar).toHaveCSS("transition-property", "none");
   await handle.focus();
   await handle.press("ArrowLeft");
-  await expect(sidebar).toHaveCSS("width", "348px");
+  await expect(sidebar).toHaveCSS("width", "320px");
   await handle.press("Home");
   await expect(sidebar).toHaveCSS("width", "72px");
   const row = sidebar.locator("[data-roster-bot-id]").first();
@@ -203,5 +203,5 @@ test("sidebar snaps its layout during a held drag in both directions", async ({
   await page.reload();
   await expect(sidebar).toHaveCSS("width", "72px");
   await page.getByTestId("restore-bots-sidebar").click();
-  await expect(sidebar).toHaveCSS("width", "316px");
+  await expect(sidebar).toHaveCSS("width", "288px");
 });

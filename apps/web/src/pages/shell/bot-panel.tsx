@@ -553,7 +553,7 @@ export function BotSettings({
         />
       </div>
       <Tabs value={tab} onValueChange={(next) => onTabChange?.(next as BotPanelTab)}>
-        <TabsList className="w-full">
+        <TabsList className="h-9 w-full rounded-full bg-muted p-1 [&_[data-slot=tabs-trigger]]:rounded-full [&_[data-slot=tabs-trigger]]:transition-colors [&_[data-slot=tabs-trigger]]:duration-200">
           <TabsTrigger value="computer">
             <Trans>Computer</Trans>
           </TabsTrigger>

@@ -55,7 +55,7 @@ export function ChatHeader({
         data-testid="bot-settings-trigger"
         aria-expanded={panelOpen}
         onClick={onTogglePanel}
-        className="app-no-drag h-auto min-w-0 gap-2 py-1 ps-1 pe-3.5"
+        className="app-no-drag h-8 min-w-0 gap-1.5 border border-border bg-background py-0 ps-1 pe-3 shadow-sm hover:bg-background"
       >
         {inGroup ? (
           <GroupAvatar members={activeSnapshot?.members ?? activeGroup?.members ?? []} size={26} />
@@ -69,7 +69,7 @@ export function ChatHeader({
           />
         ) : null}
         <span className="min-w-0">
-          <span className="block truncate text-[15px] font-medium text-foreground" dir="auto">
+          <span className="block truncate text-[15px] font-semibold text-foreground" dir="auto">
             {inGroup
               ? (activeGroup?.name ?? activeSnapshot?.groupName ?? t`Group`)
               : (active?.name ?? t`Select a bot`)}
