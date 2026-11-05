@@ -124,6 +124,7 @@ export function CallCard({ onSettings }: { onSettings: () => void }) {
             color={call.botColor}
             identity={call.botId}
             size={96}
+            followPointer
           />
         </button>
         <div className="flex flex-col items-center gap-1 text-center">

@@ -5,11 +5,13 @@ import {
   LOGO_AVATAR_EYES,
   LOGO_AVATAR_VIEWBOX,
   logoAvatarEyeInk,
+  logoAvatarFinished,
   logoAvatarTraits,
 } from "@rakazo/core";
 import { botEyeColor, tokens } from "@rakazo/ui-tokens";
 import type { CSSProperties } from "react";
-import { memo, useId, useMemo } from "react";
+import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useAvatarGaze } from "./hooks/use-avatar-gaze.js";
 import { useAvatarMotionVisibility } from "./hooks/use-avatar-motion-visibility.js";
 import { useLogoAvatarLayers } from "./hooks/use-logo-avatar-layers.js";
 import { cn } from "./lib/utils.js";
@@ -26,6 +28,7 @@ export const LogoAvatar = memo(function LogoAvatar({
   identity,
   label,
   motion = true,
+  followPointer = false,
   className,
 }: {
   activity?: LogoAvatarActivity;
@@ -34,6 +37,8 @@ export const LogoAvatar = memo(function LogoAvatar({
   identity?: string;
   label?: string;
   motion?: boolean;
+  /** The eyes follow the pointer while the avatar rests. */
+  followPointer?: boolean;
   className?: string;
 }) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
@@ -57,6 +62,15 @@ export const LogoAvatar = memo(function LogoAvatar({
     canMove && visible && !reducedMotion,
     canMove,
   );
+  const moving = canMove && visible && !reducedMotion;
+  useAvatarGaze(ref, moving && followPointer);
+  const previousActivity = useRef(activity);
+  const [finished, setFinished] = useState(false);
+  useEffect(() => {
+    const was = previousActivity.current;
+    previousActivity.current = activity;
+    setFinished(moving && logoAvatarFinished(was, activity));
+  }, [activity, moving]);
   const eyeInk = logoAvatarEyeInk(traits.color, tokens);
   return (
     <svg
@@ -69,6 +83,8 @@ export const LogoAvatar = memo(function LogoAvatar({
       data-working={activity !== "idle" && activity !== "error"}
       data-vector-body="true"
       data-motion={canMove}
+      data-gaze={(canMove && followPointer) || undefined}
+      data-finished={finished || undefined}
       data-small={size < 24}
       data-compact={size <= 38}
       data-paused={!visible}

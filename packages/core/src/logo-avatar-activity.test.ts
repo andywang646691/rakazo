@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   initialLogoAvatarSignals,
   logoAvatarActivity,
+  logoAvatarFinished,
   reduceLogoAvatarSignals,
 } from "./logo-avatar-activity.js";
 
@@ -263,5 +264,16 @@ describe("genuine coarse thinking activity", () => {
         ),
       ),
     ).toBe("idle");
+  });
+});
+
+describe("logoAvatarFinished", () => {
+  it("is true only when a busy bot comes to rest", () => {
+    expect(logoAvatarFinished("working", "idle")).toBe(true);
+    expect(logoAvatarFinished("writing", "idle")).toBe(true);
+    expect(logoAvatarFinished("idle", "idle")).toBe(false);
+    expect(logoAvatarFinished("working", "reading")).toBe(false);
+    expect(logoAvatarFinished("waiting", "idle")).toBe(false);
+    expect(logoAvatarFinished("error", "idle")).toBe(false);
   });
 });

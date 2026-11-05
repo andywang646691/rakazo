@@ -393,3 +393,31 @@ export function avatarPokeFrame(
   if (!value) return { rotate: 0, translateY: 0, scaleY: 1, eyeY: 0 };
   return { rotate: value[0]!, translateY: value[1]!, scaleY: value[2]!, eyeY: value[3]! };
 }
+
+/** Where an avatar's eyes look, from -1 to 1 on each axis: toward the pointer, `x` right, `y` down. */
+export interface AvatarGaze {
+  x: number;
+  y: number;
+}
+
+/** The closest pointer distance, in px, that turns the eyes all the way. */
+const AVATAR_GAZE_MIN_REACH = 160;
+
+/**
+ * Where the eyes of an avatar in `box` look to meet `pointer` (both in the same viewport
+ * coordinates). The look grows with the pointer's distance from the avatar's centre and
+ * is full once the pointer is two avatar widths away (at least 160 px), so a pointer
+ * near the avatar glances and a far one stares.
+ */
+export function avatarGaze(
+  box: { left: number; top: number; width: number; height: number },
+  pointer: { x: number; y: number },
+): AvatarGaze {
+  const dx = pointer.x - (box.left + box.width / 2);
+  const dy = pointer.y - (box.top + box.height / 2);
+  const distance = Math.hypot(dx, dy);
+  if (distance === 0) return { x: 0, y: 0 };
+  const reach = Math.max(AVATAR_GAZE_MIN_REACH, box.width * 2);
+  const scale = distance > reach ? 1 / distance : 1 / reach;
+  return { x: Math.round(dx * scale * 1000) / 1000, y: Math.round(dy * scale * 1000) / 1000 };
+}
