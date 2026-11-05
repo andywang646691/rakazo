@@ -30,21 +30,8 @@ export function writeBotsSidebarCollapsed(
 }
 
 export const BOTS_SIDEBAR_MINI_WIDTH = 72;
-/** Expanded bots sidebar. The width is fixed; it is not dragged. */
-export const BOTS_SIDEBAR_FIXED_WIDTH = 240;
-/** 15.5rem. Wider viewports use `BOTS_SIDEBAR_WIDE_WIDTH` when the user has not chosen a width. */
-export const BOTS_SIDEBAR_COMPACT_WIDTH = 240;
-/** 18rem, from the xl breakpoint up. */
-export const BOTS_SIDEBAR_WIDE_WIDTH = 288;
-export const BOTS_SIDEBAR_WIDE_MIN_VIEWPORT = 1280;
-
-export function defaultBotsSidebarWidth(viewportWidth: number): number {
-  return viewportWidth >= BOTS_SIDEBAR_WIDE_MIN_VIEWPORT
-    ? BOTS_SIDEBAR_WIDE_WIDTH
-    : BOTS_SIDEBAR_COMPACT_WIDTH;
-}
-
-export const BOTS_SIDEBAR_DEFAULT_WIDTH = BOTS_SIDEBAR_COMPACT_WIDTH;
+/** Expanded width before the person drags the edge. */
+export const BOTS_SIDEBAR_DEFAULT_WIDTH = 280;
 export const BOTS_SIDEBAR_MIN_WIDTH = 240;
 export const BOTS_SIDEBAR_MAX_WIDTH = 480;
 export const BOTS_SIDEBAR_SNAP_WIDTH = 160;
@@ -66,7 +53,7 @@ export function clampBotsSidebarWidth(width: number, viewportWidth = Number.POSI
 }
 
 export function readBotsSidebarWidth(userId: string | null | undefined): number {
-  const fallback = defaultBotsSidebarWidth(typeof window === "undefined" ? 0 : window.innerWidth);
+  const fallback = BOTS_SIDEBAR_DEFAULT_WIDTH;
   const key = botsSidebarWidthStorageKey(userId);
   if (!key) return fallback;
   try {

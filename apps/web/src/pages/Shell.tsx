@@ -979,11 +979,14 @@ function SpaceShell() {
     ) : null;
   const shell = (
     <BotsSidebarLayout
+      userId={userId}
       collapsed={botsSidebarCollapsed}
       onCollapsedChange={setBotsSidebarCollapsedPref}
+      onPreviewCollapsedChange={setBotsSidebarCollapsed}
+      computerOpen={computerOpen}
       data-testid="shell-root"
       data-ready={shellReady}
-      className="relative flex h-full min-h-0 min-w-0 overflow-hidden bg-background text-foreground/90"
+      className="relative flex h-full min-h-0 min-w-0 overflow-hidden bg-background text-foreground/90 [&[data-resizing-sidebar]_*[data-slot=sidebar-gap]]:transition-none [&[data-resizing-sidebar]_*[data-slot=sidebar-container]]:transition-none"
       {...swipeHandlers}
     >
       <ComputerUpdateProgress

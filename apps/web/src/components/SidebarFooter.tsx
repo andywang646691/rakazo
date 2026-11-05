@@ -139,7 +139,7 @@ export function SidebarFooter({
             sideOffset={8}
             align="start"
             data-testid="account-menu"
-            className="account-menu max-h-(--available-height) w-[208px] max-w-[calc(100vw-2rem)] gap-0 overflow-y-auto rounded-2xl p-1 shadow-none ring-foreground/10 *:shrink-0 data-closed:animate-none"
+            className="account-menu max-h-(--available-height) max-w-[calc(100vw-2rem)] gap-0 overflow-y-auto rounded-2xl p-1 shadow-none ring-foreground/10 *:shrink-0 data-closed:animate-none"
           >
             <div
               data-testid="account-menu-header"
@@ -280,7 +280,7 @@ export function SidebarFooter({
           variant="outline"
           ref={pillRef}
           onClick={onIntegrations}
-          className="h-9 min-w-0 flex-1 justify-between bg-sidebar-accent hover:border-foreground/30 hover:bg-sidebar-accent dark:hover:bg-sidebar-accent"
+          className="h-9 min-w-0 flex-1 justify-between rounded-full bg-sidebar-accent hover:border-foreground/30 hover:bg-sidebar-accent dark:hover:bg-sidebar-accent"
         >
           <span ref={labelRef} className="min-w-0 truncate">
             <Trans>Connect apps</Trans>

@@ -1,5 +1,5 @@
 import { I18nProvider } from "@lingui/react";
-import type { Bot } from "@rakazo/contracts";
+import type { Bot, ThreadMessage } from "@rakazo/contracts";
 import { BOT_COLOR_LIST, chatUserBubbleColors } from "@rakazo/core";
 import { BotAvatar } from "@rakazo/ui-web";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -55,7 +55,7 @@ function ChromePreview() {
   );
   return (
     <div className="flex h-dvh bg-background text-foreground">
-      <aside className="flex w-[240px] shrink-0 flex-col border-e border-sidebar-border bg-sidebar">
+      <aside className="flex w-[280px] shrink-0 flex-col border-e border-sidebar-border bg-sidebar">
         <SidebarHeader
           createMenuOpen={false}
           setCreateMenuOpen={noop}
@@ -105,30 +105,7 @@ function ChromePreview() {
           onCall={noop}
         />
         <FixtureTranscript
-          messages={[
-            {
-              id: "m1",
-              threadId: "thread-1",
-              seq: 1,
-              role: "user",
-              blocks: [{ kind: "text", text: "Hi! What can you help me with?" }],
-              createdAt: new Date().toISOString(),
-            },
-            {
-              id: "m2",
-              threadId: "thread-1",
-              seq: 2,
-              role: "bot",
-              botId: BOT.botId,
-              blocks: [
-                {
-                  kind: "text",
-                  text: "Pretty much anything you'd hand a sharp assistant. I can research, write, and keep an eye on things.",
-                },
-              ],
-              createdAt: new Date().toISOString(),
-            },
-          ]}
+          messages={PREVIEW_MESSAGES}
           running={false}
           showToolActivity={false}
           userBubble={chatUserBubbleColors(chief.color, chief.id)}
@@ -182,6 +159,31 @@ function ChromePreview() {
     </div>
   );
 }
+
+const PREVIEW_MESSAGES: ThreadMessage[] = [
+  "Hi! What can you help me with?",
+  "Pretty much anything you'd hand a sharp assistant. I can research, write, and keep an eye on things.",
+  "Can you pull the notes from yesterday and turn them into a short brief?",
+  "Done. The brief is three paragraphs: what changed, what is blocked, and what to do next.",
+  "Send that to the team and keep a copy here.",
+  "Sent. I left the copy in this chat so you can pick it up later.",
+  "What should we tackle after the brief?",
+  "The open questions are the launch checklist and who owns the follow-up.",
+  "Leave the checklist with me. I'll take the follow-up.",
+  "On it. I'll ping you when the checklist is ready to review.",
+  "While you do that, draft a note for the people who missed the last pass. Keep it short enough to read on a phone.",
+  "Draft is ready: what shipped, what is still open, and who is picking up the next step. I can send it whenever you say.",
+].map((text, index) => ({
+  id: `m${index + 1}`,
+  threadId: "thread-1",
+  seq: index + 1,
+  role: index % 2 === 0 ? "user" : "bot",
+  botId: index % 2 === 0 ? undefined : BOT.botId,
+  blocks: [{ kind: "text" as const, text }],
+  createdAt: new Date().toISOString(),
+}));
+
+document.documentElement.style.setProperty("--bots-sidebar-width", "280px");
 
 const theme = new URLSearchParams(location.search).get("theme") === "dark" ? "dark" : "light";
 applyResolvedAppearance(theme);

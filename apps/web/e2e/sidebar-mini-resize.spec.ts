@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { captureScreenshot, completeOnboarding, openBotPanelTab, rpc, signup } from "./helpers";
 
-test("sidebar rail keeps chats interactive at a fixed width", async ({ page }, testInfo) => {
+test("sidebar rail keeps chats interactive", async ({ page }, testInfo) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.setViewportSize({ width: 1400, height: 900 });
   await signup(page, `sidebar-rail-${Date.now()}@rakazo.test`, "password12", "Sidebar Sample");
@@ -17,8 +17,8 @@ test("sidebar rail keeps chats interactive at a fixed width", async ({ page }, t
   await page.reload();
   const sidebar = page.getByTestId("bots-sidebar");
   const row = page.locator(`[data-roster-bot-id="${bot.id}"]`);
-  await expect(page.getByTestId("bots-sidebar-edge")).toHaveCount(0);
-  await expect(sidebar).toHaveCSS("width", "240px");
+  await expect(page.getByTestId("bots-sidebar-edge")).toBeVisible();
+  await expect(sidebar).toHaveCSS("width", "280px");
   await captureScreenshot(page, testInfo, "sidebar-fixed-expanded");
 
   await sidebar.getByTestId("sidebar-search-trigger").click();
@@ -58,12 +58,12 @@ test("sidebar rail keeps chats interactive at a fixed width", async ({ page }, t
   await page.reload();
   await expect(sidebar).toHaveCSS("width", "72px");
   await page.getByTestId("restore-bots-sidebar").click();
-  await expect(sidebar).toHaveCSS("width", "240px");
+  await expect(sidebar).toHaveCSS("width", "280px");
 
   await page.getByTestId("minimize-bots-sidebar").click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Open navigation" }).click();
-  await expect(sidebar).toHaveCSS("width", "240px");
+  await expect(sidebar).toHaveCSS("width", "280px");
   await expect(sidebar.getByTestId("sidebar-search-trigger")).toBeVisible();
   await expect(sidebar.getByRole("textbox", { name: "Search", exact: true })).toHaveCount(0);
   await expect(row.locator("[data-roster-bot-name]")).toBeVisible();
@@ -79,8 +79,8 @@ test("sidebar resize follows RTL and reduced motion", async ({ page }, testInfo)
   // A viewport change renders the logical sidebar side after changing document direction.
   await page.setViewportSize({ width: 1300, height: 900 });
   const sidebar = page.getByTestId("bots-sidebar");
-  await expect(page.getByTestId("bots-sidebar-edge")).toHaveCount(0);
-  await expect(sidebar).toHaveCSS("width", "240px");
+  await expect(page.getByTestId("bots-sidebar-edge")).toBeVisible();
+  await expect(sidebar).toHaveCSS("width", "280px");
   await page.getByTestId("minimize-bots-sidebar").click();
   await expect(sidebar).toHaveCSS("width", "72px");
   const row = sidebar.locator("[data-roster-bot-id]").first();
@@ -96,7 +96,7 @@ test("sidebar resize follows RTL and reduced motion", async ({ page }, testInfo)
     .toBe(true);
   await captureScreenshot(page, testInfo, "sidebar-mini-avatar-rail-rtl");
   await page.getByTestId("restore-bots-sidebar").click();
-  await expect(sidebar).toHaveCSS("width", "240px");
+  await expect(sidebar).toHaveCSS("width", "280px");
   const box = (await sidebar.boundingBox())!;
   expect(Math.round(box.x + box.width)).toBe(1300);
 });
@@ -108,12 +108,12 @@ test("narrow desktop keeps the chat width when both panels are open", async ({
   await signup(page, `sidebar-panels-${Date.now()}@rakazo.test`, "password12", "Sidebar Sample");
   await completeOnboarding(page);
   const sidebar = page.getByTestId("bots-sidebar");
-  await expect(sidebar).toHaveCSS("width", "240px");
+  await expect(sidebar).toHaveCSS("width", "280px");
   await openBotPanelTab(page, "Computer");
   const panel = page.getByTestId("side-panel");
   await expect(panel).toHaveCSS("position", "absolute");
   const chat = page.locator('[data-space-switch="main"]');
-  await expect(chat).toHaveCSS("width", "560px");
+  await expect(chat).toHaveCSS("width", "520px");
   await expect(panel).toHaveCSS("width", "320px");
   await captureScreenshot(page, testInfo, "sidebar-narrow-panel-overlay");
   await page.getByTestId("minimize-bots-sidebar").click();
@@ -122,13 +122,13 @@ test("narrow desktop keeps the chat width when both panels are open", async ({
   await expect.poll(async () => (await chat.boundingBox())!.width).toBeGreaterThanOrEqual(320);
 });
 
-test("sidebar stays a fixed width when collapsed and restored", async ({ page }, testInfo) => {
+test("sidebar restores its width when collapsed and expanded", async ({ page }, testInfo) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await signup(page, `sidebar-fixed-${Date.now()}@rakazo.test`, "password12", "Sidebar Sample");
   await completeOnboarding(page);
   const sidebar = page.getByTestId("bots-sidebar");
-  await expect(page.getByTestId("bots-sidebar-edge")).toHaveCount(0);
-  await expect(sidebar).toHaveCSS("width", "240px");
+  await expect(page.getByTestId("bots-sidebar-edge")).toBeVisible();
+  await expect(sidebar).toHaveCSS("width", "280px");
   await page.getByTestId("minimize-bots-sidebar").click();
   await expect(sidebar).toHaveCSS("width", "72px");
   const path = testInfo.outputPath("sidebar-mini-tight-spacing.png");
@@ -137,5 +137,5 @@ test("sidebar stays a fixed width when collapsed and restored", async ({ page },
   await page.reload();
   await expect(sidebar).toHaveCSS("width", "72px");
   await page.getByTestId("restore-bots-sidebar").click();
-  await expect(sidebar).toHaveCSS("width", "240px");
+  await expect(sidebar).toHaveCSS("width", "280px");
 });
