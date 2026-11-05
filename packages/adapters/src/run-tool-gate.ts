@@ -67,6 +67,7 @@ import {
   CATALOG_APPROVAL_TOOL,
   claimEffect,
   completeEffect,
+  isBackgroundHelperToolExecution,
   recordEffect,
   uncertainEffectError,
 } from "./run-effects.js";
@@ -510,6 +511,21 @@ export async function gateToolCall(
   }
 
   const needsApproval = gateDecision === "ask";
+  // A background helper works beside its parent's turn, which must not stop for its approval.
+  if (needsApproval && isBackgroundHelperToolExecution(executionId)) {
+    if (applied) {
+      await deps.prisma.externalEffect.updateMany({
+        where: { id: applied.effect.id, status: "intended" },
+        data: { status: "denied" },
+      });
+    }
+    return {
+      result: {
+        error:
+          "This action needs the person's approval, and a background helper cannot ask. Report what you need to the parent bot instead.",
+      },
+    };
+  }
   const call = createToolCall(ctx, {
     name,
     args,

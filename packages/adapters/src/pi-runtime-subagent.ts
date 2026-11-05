@@ -1,7 +1,7 @@
 import { Agent } from "@earendil-works/pi-agent-core";
 import type { AssistantMessage } from "@earendil-works/pi-ai";
 import { isTerminatingReplyResult, terminatingReplyText } from "./approval-effect.js";
-import { withAutomatedLabels } from "./automated-messages.js";
+import { automated, withAutomatedLabels } from "./automated-messages.js";
 import { DELEGATION_TOOL_NAMES } from "./builtin-tools.js";
 import { withCloudflareAuth } from "./cloudflare-ai-gateway.js";
 import { estimatePiImageTokens } from "./pi-image-context.js";
@@ -26,10 +26,81 @@ import { conversationSessionId, reliableModelStream } from "./pi-runtime-stream.
 import type { ToolHost } from "./pi-runtime-tools.js";
 import { toAgentTools, toolCallBudgetExceededMessage } from "./pi-runtime-tools.js";
 import { observedPiStream } from "./pi-usage.js";
+import { backgroundHelperNamespace } from "./run-effects.js";
 import { createRuntimeContextPolicy } from "./runtime-context.js";
 import { deliverFinishedShells } from "./shell-command-stream.js";
 
 export const MAX_PARALLEL_SUBAGENTS = 4;
+
+/** Tools that stop to wait for the person; a background helper cannot pause the run. */
+const PAUSING_TOOLS = new Set(["ask_user", "request_takeover", "request_secret"]);
+
+/**
+ * Helpers started with `background: true`. They work beside the parent's turn, and each
+ * finished helper leaves an automated note for the parent to read at its next turn boundary.
+ */
+export class BackgroundHelpers {
+  private readonly running = new Set<Promise<void>>();
+  private readonly finished: string[] = [];
+  private readonly listeners = new Set<() => void>();
+  /** Set when the parent's run ends; helpers that have not started yet then never start. */
+  stopped = false;
+
+  start(work: Promise<string>) {
+    const tracked: Promise<void> = work
+      .then(
+        (text) => {
+          this.finished.push(text);
+        },
+        (error: unknown) => {
+          this.finished.push(
+            automated(
+              `A background helper failed: ${sanitizeError(error instanceof Error ? error.message : String(error))}`,
+            ),
+          );
+        },
+      )
+      .finally(() => {
+        this.running.delete(tracked);
+        for (const listener of [...this.listeners]) listener();
+      });
+    this.running.add(tracked);
+  }
+
+  get busy(): boolean {
+    return this.running.size > 0;
+  }
+
+  /** Notes from helpers that finished since the last call. */
+  take(): string[] {
+    return this.finished.splice(0);
+  }
+
+  /** Resolves when a helper finishes, after `ms`, or when `signal` aborts. */
+  wait(ms: number, signal?: AbortSignal): Promise<void> {
+    if (!this.busy || signal?.aborted) return Promise.resolve();
+    return new Promise((resolve) => {
+      const done = () => {
+        clearTimeout(timer);
+        this.listeners.delete(done);
+        signal?.removeEventListener("abort", done);
+        resolve();
+      };
+      const timer = setTimeout(done, ms);
+      this.listeners.add(done);
+      signal?.addEventListener("abort", done, { once: true });
+    });
+  }
+
+  stop() {
+    this.stopped = true;
+  }
+
+  /** Waits for every helper to settle; callers abort them first when the run ends. */
+  async settle(): Promise<void> {
+    await Promise.all([...this.running]);
+  }
+}
 
 /**
  * A helper's result within `limit` characters. A stop text (the spent-budget message or a
@@ -45,18 +116,41 @@ export function helperResultText(text: string, tail: string | undefined, limit: 
   return text && room > 1 ? `${clipTo(text, room)}\n\n${tail}` : tail;
 }
 
+function helperName(args: Record<string, unknown>) {
+  return (
+    String(args.name ?? "helper")
+      .trim()
+      .slice(0, 80) || "helper"
+  );
+}
+
 export async function executeSubagent(
   host: ToolHost,
   executionId: string,
   args: Record<string, unknown>,
 ) {
   if (host.depth > 0) return "Subagents cannot nest further.";
+  if (args.background !== true) return runSubagent(host, executionId, args, false);
+  if (!host.backgroundHelpers)
+    return "Background helpers are unavailable here; run it without background.";
+  const name = helperName(args);
+  host.backgroundHelpers.start(runSubagent(host, executionId, args, true));
+  return `Helper "${name}" is working in the background. Keep working or answer the person; its result arrives as an automated note before this run ends. It cannot ask the person anything or take actions that need approval.`;
+}
+
+async function runSubagent(
+  host: ToolHost,
+  executionId: string,
+  args: Record<string, unknown>,
+  background: boolean,
+) {
   await host.subagentGate.acquire();
   const agentId = executionId;
-  const name =
-    String(args.name ?? "helper")
-      .trim()
-      .slice(0, 80) || "helper";
+  const name = helperName(args);
+  const failed = (message: string) =>
+    background
+      ? automated(`Your background helper "${name}" failed: ${message}`)
+      : `Subagent failed: ${message}`;
   const task = String(args.task ?? "").trim();
   const extra = args.instructions ? String(args.instructions).trim() : "";
   host.queue.push({
@@ -93,7 +187,7 @@ export async function executeSubagent(
       result: message,
     });
     host.subagentGate.release();
-    return `Subagent failed: ${message}`;
+    return failed(message);
   }
 
   const selectedModel =
@@ -115,7 +209,7 @@ export async function executeSubagent(
       result: message,
     });
     host.subagentGate.release();
-    return `Subagent failed: ${message}`;
+    return failed(message);
   }
   const subagentModel = modelForCompletion(selectedModel.model, requestModel.maxTokens);
 
@@ -123,7 +217,8 @@ export async function executeSubagent(
   const childDefs = host.request.tools.filter(
     (tool) =>
       !DELEGATION_TOOL_NAMES.has(tool.name) &&
-      !(host.computerModeAllowed && COMPUTER_MODE_TOOLS.has(tool.name)),
+      !(host.computerModeAllowed && COMPUTER_MODE_TOOLS.has(tool.name)) &&
+      !(background && PAUSING_TOOLS.has(tool.name)),
   );
   const nestedHost: ToolHost = {
     ...host,
@@ -141,14 +236,19 @@ export async function executeSubagent(
       ? (selectedModel.credentials?.accessToken ?? selectedModel.apiKey)
       : selectedModel.apiKey,
     depth: 1,
-    agentNamespace: agentId,
+    // The executor refuses approvals for a background helper's calls by this namespace.
+    agentNamespace: background ? backgroundHelperNamespace(agentId) : agentId,
+    backgroundHelpers: undefined,
     pendingShells: [],
     modelResponses: undefined,
     // A paused child or a spent shared budget stops the parent turn; a result that
     // ends only the child's turn stops the child, and the parent reads it as the
-    // tool result, exactly as it reads a lone turn-ending result.
+    // tool result, exactly as it reads a lone turn-ending result. A background
+    // helper never pauses the parent: the parent may be mid-way through other work.
     abortTurn: () =>
-      nestedHost.pausePending || host.toolCallBudget.exceeded ? host.abortTurn() : nested.abort(),
+      (nestedHost.pausePending && !background) || host.toolCallBudget.exceeded
+        ? host.abortTurn()
+        : nested.abort(),
   };
   let contextPolicy = createRuntimeContextPolicy(
     {
@@ -328,7 +428,7 @@ export async function executeSubagent(
   });
 
   try {
-    if (host.signal.aborted) {
+    if (host.signal.aborted || (background && host.backgroundHelpers?.stopped)) {
       host.queue.push({
         type: "subagent",
         agentId,
@@ -352,7 +452,7 @@ export async function executeSubagent(
         host.signal.removeEventListener("abort", onAbort);
         // nestedHost is a shallow copy; ask_user / request_takeover set pause
         // only on the child. Copy it up before the parent releases the budget.
-        if (nestedHost.pausePending) host.pausePending = true;
+        if (nestedHost.pausePending && !background) host.pausePending = true;
       }
     }
     // Shared-budget abort leaves errorMessage on the nested agent; surface it as a
@@ -376,12 +476,14 @@ export async function executeSubagent(
         status: "failed",
         result: message,
       });
-      return `Subagent failed: ${message}`;
+      return failed(message);
     }
     const budgetMessage = budgetExceeded
       ? toolCallBudgetExceededMessage(host.toolCallBudget.limit)
       : undefined;
-    const label = `Result from your helper "${name}" (not a message from the user):\n`;
+    const label = background
+      ? `${automated(`Result from your background helper "${name}" (not a message from the user):`)}\n`
+      : `Result from your helper "${name}" (not a message from the user):\n`;
     // The parent clips label and result together, so the result gets what is left.
     const tail = budgetMessage ?? endedReply;
     const clipped = helperResultText(
@@ -409,7 +511,7 @@ export async function executeSubagent(
       status: "failed",
       result: message,
     });
-    return `Subagent failed: ${message}`;
+    return failed(message);
   } finally {
     host.nestedAgents.delete(nested);
     host.subagentGate.release();

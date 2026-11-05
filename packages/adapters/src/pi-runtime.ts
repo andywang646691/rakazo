@@ -1,4 +1,4 @@
-import type { AgentToolResult } from "@earendil-works/pi-agent-core";
+import type { AgentToolResult, AgentTurnContext } from "@earendil-works/pi-agent-core";
 import { Agent } from "@earendil-works/pi-agent-core";
 import type {
   Api,
@@ -69,7 +69,7 @@ import {
   thinkingLevelFor,
 } from "./pi-runtime-models.js";
 import { conversationSessionId, reliableModelStream } from "./pi-runtime-stream.js";
-import { MAX_PARALLEL_SUBAGENTS } from "./pi-runtime-subagent.js";
+import { BackgroundHelpers, MAX_PARALLEL_SUBAGENTS } from "./pi-runtime-subagent.js";
 import type { EventQueue, ToolCallBudget, ToolHost } from "./pi-runtime-tools.js";
 import {
   describeToolActivity,
@@ -100,6 +100,8 @@ const running = new Map<string, { controller: AbortController; work: Promise<voi
 // instead of taking another assistant turn. A bounded internal follow-up keeps
 // that provider quirk from making a long task look complete after one step.
 const MAX_SILENT_TOOL_CONTINUATIONS = 3;
+// How often a bot that waits only for background helpers checks for messages sent to its run.
+const BACKGROUND_HELPER_STEERING_POLL_MS = 1_000;
 // Sent in the user's role, so marked as automated: otherwise models read it as the user
 // telling them never to stop, and keep going instead of asking.
 export const SILENT_TOOL_CONTINUATION_PROMPT = automated(
@@ -297,8 +299,10 @@ export class PiAgentRuntime implements AgentRuntime {
           depth: 0,
           pausePending: false,
           pendingShells: [],
+          backgroundHelpers: new BackgroundHelpers(),
           modelResponses: 0,
         };
+        const backgroundHelpers = host.backgroundHelpers!;
         resumeHost = host;
         const allTools = toAgentTools(toolDefs, host);
         let tools = allTools;
@@ -587,6 +591,68 @@ export class PiAgentRuntime implements AgentRuntime {
               mode === "computer",
             );
         }
+        /** Hands the bot messages sent to this run since its last turn; true when there were any. */
+        const steerFromRun = async () => {
+          if (!request.claimSteering) return false;
+          const steering = await request.claimSteering([...seenSteeringIds]);
+          if (steering.length === 0) return false;
+          seenSteeringIds.push(...steering.map((item) => item.id));
+          for (const item of steering) representedHistoryIds.add(item.messageId);
+          if (steering.some((item) => item.images?.length && !item.imageFileFallback))
+            hasCurrentImages = true;
+          for (const item of steering) {
+            const images = toPiImages(item.images);
+            const text =
+              item.origin === "user"
+                ? midTaskMessagePrompt(
+                    steeringText(item),
+                    toolDefs.some((tool) => tool.name === "message_user"),
+                  )
+                : midTaskMessageFromPrompt(steeringText(item), item.origin);
+            agent.steer({
+              role: "user",
+              content: images.length ? [{ type: "text", text }, ...images] : text,
+              timestamp: Date.now(),
+            });
+          }
+          // Ordered with the turn's other events, so the run can treat it as a turn boundary.
+          queue.push({
+            type: "steered",
+            fromRunUser: steering.some((item) => item.origin === "user"),
+          });
+          return true;
+        };
+        const deliverHelperResults = () => {
+          const results = backgroundHelpers.take();
+          if (results.length === 0) return false;
+          agent.steer({ role: "user", content: results.join("\n\n"), timestamp: Date.now() });
+          return true;
+        };
+        /**
+         * When the bot would stop while background helpers still work, keep the run open: answer
+         * messages sent meanwhile, and hand each helper's result over as it finishes.
+         */
+        const awaitBackgroundHelpers = async (turn: AgentTurnContext, turnSignal?: AbortSignal) => {
+          if (deliverHelperResults() || !backgroundHelpers.busy) return;
+          const message = turn.message;
+          const stopped = message.stopReason === "error" || message.stopReason === "aborted";
+          if (
+            turn.toolResults.length > 0 ||
+            messageHasToolCall(message) ||
+            stopped ||
+            host.pausePending ||
+            terminatedReply ||
+            agent.hasQueuedMessages()
+          )
+            return;
+          const waitSignal = turnSignal ?? signal;
+          while (backgroundHelpers.busy && !waitSignal.aborted && !signal.aborted) {
+            if (await steerFromRun()) return;
+            await backgroundHelpers.wait(BACKGROUND_HELPER_STEERING_POLL_MS, waitSignal);
+            if (deliverHelperResults()) return;
+          }
+          deliverHelperResults();
+        };
         agent = new Agent({
           sessionId: conversationSessionId(request.threadId, request.botId),
           steeringMode: "all",
@@ -613,6 +679,7 @@ export class PiAgentRuntime implements AgentRuntime {
               turn,
               turnSignal,
             );
+            await awaitBackgroundHelpers(turn, turnSignal);
           },
           prepareNextTurnWithContext: async (turn) => {
             const update = computer
@@ -632,37 +699,11 @@ export class PiAgentRuntime implements AgentRuntime {
                   ),
                 }
               : undefined;
-            if (!request.claimSteering) return update;
             // The turn is ending at a terminating result that aborted the agent; no
             // model request would answer a follow-up claimed now, and a completed run
             // deletes its claimed steering. Leave the message queued for the next run.
             if (terminatedReply && !host.pausePending) return update;
-            const steering = await request.claimSteering([...seenSteeringIds]);
-            if (steering.length === 0) return update;
-            seenSteeringIds.push(...steering.map((item) => item.id));
-            for (const item of steering) representedHistoryIds.add(item.messageId);
-            if (steering.some((item) => item.images?.length && !item.imageFileFallback))
-              hasCurrentImages = true;
-            for (const item of steering) {
-              const images = toPiImages(item.images);
-              const text =
-                item.origin === "user"
-                  ? midTaskMessagePrompt(
-                      steeringText(item),
-                      toolDefs.some((tool) => tool.name === "message_user"),
-                    )
-                  : midTaskMessageFromPrompt(steeringText(item), item.origin);
-              agent.steer({
-                role: "user",
-                content: images.length ? [{ type: "text", text }, ...images] : text,
-                timestamp: Date.now(),
-              });
-            }
-            // Ordered with the turn's other events, so the run can treat it as a turn boundary.
-            queue.push({
-              type: "steered",
-              fromRunUser: steering.some((item) => item.origin === "user"),
-            });
+            await steerFromRun();
             return update;
           },
           initialState: {
@@ -1096,6 +1137,12 @@ export class PiAgentRuntime implements AgentRuntime {
             await agent.waitForIdle();
           } finally {
             signal.removeEventListener("abort", onAbort);
+            // A run that ends early (a pause, an error, a stop) takes its background helpers with it.
+            if (backgroundHelpers.busy) {
+              backgroundHelpers.stop();
+              for (const nested of nestedAgents) nested.abort();
+              await backgroundHelpers.settle();
+            }
           }
         }
         // A continuation that failed or stopped early still hands over what it wrote.
