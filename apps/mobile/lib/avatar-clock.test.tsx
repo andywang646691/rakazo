@@ -1,3 +1,4 @@
+import type * as CoreModule from "@rakazo/core";
 // @vitest-environment jsdom
 
 import type { ReactNode } from "react";
@@ -6,6 +7,12 @@ import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ActivityMark } from "../components/activity-mark";
+
+// Avatar motion is switched off in the product; these tests cover the machinery behind it.
+vi.mock("@rakazo/core", async (importOriginal) => ({
+  ...(await importOriginal<typeof CoreModule>()),
+  AVATAR_MOTION_ENABLED: true,
+}));
 
 /** Every animated style built, newest last, so a test can sample it later. */
 const styles = vi.hoisted(() => [] as Array<() => Record<string, unknown>>);

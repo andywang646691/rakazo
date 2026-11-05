@@ -1,3 +1,4 @@
+import type * as CoreModule from "@rakazo/core";
 // @vitest-environment jsdom
 
 import {
@@ -20,6 +21,12 @@ import type { BotAvatarProps } from "../components/bot-avatar";
 import { BotAvatar } from "../components/bot-avatar";
 import { AvatarScreenFocus } from "./avatar-life";
 import { mobileLogoAvatarActivity } from "./logo-avatar-activity";
+
+// Avatar motion is switched off in the product; these tests cover the machinery behind it.
+vi.mock("@rakazo/core", async (importOriginal) => ({
+  ...(await importOriginal<typeof CoreModule>()),
+  AVATAR_MOTION_ENABLED: true,
+}));
 
 const nativeProps = vi.hoisted(() => [] as Array<() => Record<string, unknown>>);
 const mobileTokens = vi.hoisted(() => ({ current: undefined as ColorTokens | undefined }));

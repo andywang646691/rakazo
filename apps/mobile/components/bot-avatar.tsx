@@ -2,6 +2,7 @@ import type { BotAvatarSet } from "@rakazo/contracts";
 import type { AvatarEyes, AvatarMotionMode, LogoAvatarActivity } from "@rakazo/core";
 import {
   AVATAR_LID_CLOSE,
+  AVATAR_MOTION_ENABLED,
   AVATAR_MOTION_UNITS,
   AVATAR_TYPING_DOTS,
   avatarClip,
@@ -166,7 +167,7 @@ function RakazoBotAvatar({
         identity={identity}
         size={size}
         activity={resolved}
-        motion={motion}
+        motion={AVATAR_MOTION_ENABLED ? motion : "static"}
         pokeable={pokeable}
       />
       {working ? <WorkingDot size={size} muted={muted} /> : null}
@@ -281,8 +282,9 @@ function LegacyBotAvatar({
   const onScreen = useAvatarOnScreen();
   const reducedMotion = useReducedMotion();
   const settling = useSettling(state);
+  const avatarMotion = AVATAR_MOTION_ENABLED ? motion : "static";
   const clock = avatarClock({
-    mode: motion,
+    mode: avatarMotion,
     onScreen,
     hasEyes: parsed.kind !== "image",
     size,
@@ -290,7 +292,7 @@ function LegacyBotAvatar({
     settling,
     reducedMotion,
   });
-  const life = useLife(state, clock, size, motion);
+  const life = useLife(state, clock, size, avatarMotion);
   const poke = usePoke(life, pokeable && clock === "running");
   const bodyStyle = useBodyStyle(life, size);
   const picture =

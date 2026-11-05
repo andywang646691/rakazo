@@ -47,6 +47,9 @@ export type AvatarMotionMode = "static" | "lazy" | "live" | "running";
  */
 export type AvatarClock = "still" | "parked" | "running";
 
+/** Bot avatars hold still on every surface; flip this to bring their motion back. */
+export const AVATAR_MOTION_ENABLED = false;
+
 /** After a bot goes back to rest, its avatar keeps moving this long, then goes still. */
 export const AVATAR_SETTLE_MS = 1400;
 /** Avatars this small (in points) stay still: their motion would only read as jitter. */

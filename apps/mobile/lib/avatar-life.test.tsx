@@ -1,3 +1,4 @@
+import type * as CoreModule from "@rakazo/core";
 // @vitest-environment jsdom
 
 import {
@@ -30,6 +31,12 @@ import {
   createAvatarViewport,
   MORPH_SPRING,
 } from "./avatar-life";
+
+// Avatar motion is switched off in the product; these tests cover the machinery behind it.
+vi.mock("@rakazo/core", async (importOriginal) => ({
+  ...(await importOriginal<typeof CoreModule>()),
+  AVATAR_MOTION_ENABLED: true,
+}));
 
 const CLOCK_MS = 24 * 60 * 60 * 1000;
 const motion = vi.hoisted(() => ({

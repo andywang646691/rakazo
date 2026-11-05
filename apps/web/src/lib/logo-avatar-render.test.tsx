@@ -1,11 +1,18 @@
 // @vitest-environment jsdom
 import type { ProductEvent } from "@rakazo/contracts";
+import type * as CoreModule from "@rakazo/core";
 import { BotAvatar, BotAvatarActivityProvider } from "@rakazo/ui-web";
 import { act } from "react";
 import type { Root } from "react-dom/client";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { webLogoAvatarActivity } from "./logo-avatar-activity";
+
+// Avatar motion is switched off in the product; this test covers the machinery behind it.
+vi.mock("@rakazo/core", async (importOriginal) => ({
+  ...(await importOriginal<typeof CoreModule>()),
+  AVATAR_MOTION_ENABLED: true,
+}));
 
 let root: Root;
 let container: HTMLDivElement;

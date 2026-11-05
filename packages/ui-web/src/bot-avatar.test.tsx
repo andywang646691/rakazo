@@ -120,12 +120,11 @@ describe("BotAvatar", () => {
     expect(html).not.toContain("evil.example");
   });
 
-  it("honors reduced-motion for the working mascot pulse class", () => {
+  it("keeps a working shaped avatar still", () => {
     const html = renderToString(
       <BotAvatar color="#8B5CF6::shape_0" identity="maya" size={32} status="running" />,
     );
-    expect(html).toContain("animate-pulse");
-    expect(html).toContain("motion-reduce:animate-none");
+    expect(html).not.toContain("animate-pulse");
   });
 
   it("restores a plain color that renders the organic body instead of a pinned shape", () => {
@@ -171,17 +170,10 @@ describe("BotAvatar", () => {
     expect(html).toContain("rakazo-organic-avatar");
   });
 
-  it("morphs the organic body only while working", () => {
-    const morphing = (status: string) =>
-      [
-        ...renderToString(<BotAvatar color="#8B5CF6" status={status} />).matchAll(
-          /rakazo-organic-avatar-body-(idle|working)"[^>]*>(<animate)?/g,
-        ),
-      ]
-        .filter((match) => match[2])
-        .map((match) => match[1]);
-    expect(morphing("idle")).toEqual([]);
-    expect(morphing("running")).toEqual(["working"]);
+  it("never morphs the organic body, even while working", () => {
+    expect(renderToString(<BotAvatar color="#8B5CF6" status="running" />)).not.toContain(
+      "<animate",
+    );
   });
 
   it("draws every plain-colour bot with the organic body", () => {
