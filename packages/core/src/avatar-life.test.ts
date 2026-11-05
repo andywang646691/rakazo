@@ -23,6 +23,7 @@ import {
   avatarClipPool,
   avatarClock,
   avatarFrame,
+  avatarGaze,
   avatarLifeState,
   avatarPhotoDot,
   avatarPokeFrame,
@@ -483,5 +484,33 @@ describe("authored motion", () => {
     expect(Math.min(...frames("bounce").map((frame) => frame.translateY))).toBeLessThan(-0.12);
     expect(Math.max(...frames("nod").map((frame) => frame.eyeY))).toBeGreaterThan(12);
     expect(frames("nod").every((frame) => frame.rotate === 0)).toBe(true);
+  });
+});
+
+describe("avatarGaze", () => {
+  const box = { left: 100, top: 100, width: 40, height: 40 };
+
+  it("looks straight ahead at the centre", () => {
+    expect(avatarGaze(box, { x: 120, y: 120 })).toEqual({ x: 0, y: 0 });
+  });
+
+  it("turns toward the pointer and grows with its distance", () => {
+    const near = avatarGaze(box, { x: 160, y: 120 });
+    const far = avatarGaze(box, { x: 400, y: 120 });
+    expect(near.x).toBeGreaterThan(0);
+    expect(near.y).toBe(0);
+    expect(far).toEqual({ x: 1, y: 0 });
+    expect(avatarGaze(box, { x: 120, y: -400 }).y).toBe(-1);
+  });
+
+  it("never looks past full, whichever way the pointer lies", () => {
+    for (const pointer of [
+      { x: 5000, y: 5000 },
+      { x: -5000, y: 90 },
+      { x: 121, y: 119 },
+    ]) {
+      const gaze = avatarGaze(box, pointer);
+      expect(Math.hypot(gaze.x, gaze.y)).toBeLessThanOrEqual(1.001);
+    }
   });
 });

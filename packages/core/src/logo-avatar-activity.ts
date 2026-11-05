@@ -36,6 +36,22 @@ export function usesLogoAvatar(bot: { avatarSet?: string; color: string }): bool
   return bot.avatarSet === "rakazo" && parsed.kind !== "image" && parsed.kind !== "shape";
 }
 
+const BUSY_ACTIVITIES: ReadonlySet<LogoAvatarActivity> = new Set([
+  "reading",
+  "writing",
+  "thinking",
+  "computer",
+  "working",
+]);
+
+/** A bot that was busy and is now at rest has just finished, and nods once. */
+export function logoAvatarFinished(
+  previous: LogoAvatarActivity,
+  next: LogoAvatarActivity,
+): boolean {
+  return BUSY_ACTIVITIES.has(previous) && next === "idle";
+}
+
 export function logoAvatarNeedsAttention(activity: LogoAvatarActivity): boolean {
   "worklet";
   return activity === "waiting";

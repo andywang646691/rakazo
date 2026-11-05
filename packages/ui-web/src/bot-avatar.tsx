@@ -84,6 +84,8 @@ export interface BotAvatarProps {
   size?: number;
   status?: string;
   identity?: string;
+  /** The eyes follow the pointer while the bot rests. */
+  followPointer?: boolean;
   className?: string;
 }
 
@@ -94,6 +96,7 @@ export const BotAvatar = memo(function BotAvatar({
   size = 36,
   status,
   identity = "",
+  followPointer,
   className,
 }: BotAvatarProps) {
   const id = useId().replace(/[^a-zA-Z0-9-_]/g, "");
@@ -153,6 +156,7 @@ export const BotAvatar = memo(function BotAvatar({
         size={size}
         activity={activity}
         status={status}
+        followPointer={followPointer}
         className={className}
       />
     );
