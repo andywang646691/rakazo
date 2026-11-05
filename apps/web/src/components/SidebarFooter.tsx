@@ -280,7 +280,7 @@ export function SidebarFooter({
           variant="outline"
           ref={pillRef}
           onClick={onIntegrations}
-          className="h-9 min-w-0 flex-1 justify-between rounded-full bg-sidebar-accent transition-[background-color,box-shadow,scale] duration-150 ease-out hover:scale-[1.02] hover:bg-[color-mix(in_srgb,var(--foreground)_6%,var(--sidebar-accent))] hover:shadow-[0_6px_20px_rgb(0_0_0/0.1)] active:scale-[0.98] active:bg-[color-mix(in_srgb,var(--foreground)_10%,var(--sidebar-accent))] dark:hover:bg-[color-mix(in_srgb,var(--foreground)_12%,var(--sidebar-accent))] dark:hover:shadow-[0_8px_24px_rgb(0_0_0/0.55)] motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
+          className="h-9 min-w-0 flex-1 justify-between rounded-full bg-sidebar-accent transition-colors duration-150 ease-out hover:bg-[color-mix(in_srgb,var(--foreground)_6%,var(--sidebar-accent))] active:bg-[color-mix(in_srgb,var(--foreground)_10%,var(--sidebar-accent))] dark:hover:bg-[color-mix(in_srgb,var(--foreground)_12%,var(--sidebar-accent))]"
         >
           <span ref={labelRef} className="min-w-0 truncate">
             <Trans>Connect apps</Trans>
