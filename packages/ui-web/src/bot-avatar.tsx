@@ -241,7 +241,7 @@ export const BotAvatar = memo(function BotAvatar({
           height: size,
           filter: isWorking
             ? `drop-shadow(0 0 8px ${colorDef.hex}) drop-shadow(0 0 2px #ffffff)`
-            : "drop-shadow(0 2px 4px rgba(0,0,0,0.45))",
+            : undefined,
         }}
       >
         <g>
@@ -353,7 +353,7 @@ function OrganicAvatar({
               filter:
                 mode === "working"
                   ? `drop-shadow(0 0 ${Math.round(size * 0.16)}px ${color})`
-                  : "drop-shadow(0 2px 3px rgba(0,0,0,.34))",
+                  : undefined,
             }}
           />
         ))}
