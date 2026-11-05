@@ -397,10 +397,9 @@ export function createModelConnector(deps: RouterDeps, codexCatalog: CodexLiveCa
         plaintext,
         label: input.label,
         modelId: input.modelId,
-        // openai-compatible keeps its effort inside the stored endpoint
-        // secret; catalog providers store it on the space preference.
-        thinkingLevel:
-          input.provider === OPENAI_COMPATIBLE_PROVIDER_ID ? undefined : input.thinkingLevel,
+        // The endpoint secret keeps a copy. The preference and main role must
+        // store it too, or a reload shows the previous effort (often default).
+        thinkingLevel: input.thinkingLevel,
         makeDefault: input.makeDefault,
         scope: input.scope,
         supportsImages: input.supportsImages,

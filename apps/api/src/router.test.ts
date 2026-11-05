@@ -36,6 +36,7 @@ import {
   MODEL_KEY_FORMAT_ERROR,
   REPLY_QUOTE_MAX_LENGTH,
 } from "@rakazo/contracts";
+import { connectionFormFields } from "@rakazo/core";
 import { openScreenCapability } from "@rakazo/core/node/screen-capability";
 import type { PrismaClient } from "@rakazo/db";
 import {
@@ -8267,6 +8268,73 @@ describe("openai-compatible enabled models", () => {
         update: expect.objectContaining({ modelId: "m-z", thinkingLevel: "high" }),
       }),
     );
+  });
+
+  it("persists a changed reasoning effort and the other advanced limits for the selected model", async () => {
+    const { call, prisma, secrets } = fixture({
+      plaintext: secretText(["selected-model"]),
+      defaultModel: "selected-model",
+    });
+
+    const result = await call("models/connect", {
+      provider: compatible,
+      baseUrl,
+      modelId: "selected-model",
+      enabledModelIds: ["other-model", "third-model"],
+      reasoning: true,
+      thinkingLevel: "high",
+      maxTokens: 128000,
+      contextWindow: 1000000,
+      supportsImages: true,
+      maxImagesPerPrompt: 8,
+      apiProtocol: "chat-completions",
+    });
+
+    expect(result.status).toBe(200);
+    const plaintext = secrets.put.mock.calls.at(-1)![0] as string;
+    expect(parseModelSecret(plaintext)).toMatchObject({
+      thinkingLevel: "high",
+      maxTokens: 128000,
+      contextWindow: 1000000,
+      maxImagesPerPrompt: 8,
+      reasoning: true,
+    });
+    const shown = modelCredentialDto(
+      {
+        id: "cred-compat",
+        provider: compatible,
+        label: "Compatible",
+        isDefault: true,
+        defaultModel: "selected-model",
+        thinkingLevel: null,
+      },
+      plaintext,
+    );
+    expect(shown.thinkingLevel).toBe("high");
+    expect(prisma.userModelPreference.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          modelId: "selected-model",
+          thinkingLevel: "high",
+        }),
+      }),
+    );
+    expect(
+      connectionFormFields({
+        catalog: [],
+        provider: compatible,
+        modelId: shown.modelId ?? "",
+        credential: shown,
+      }),
+    ).toMatchObject({
+      thinkingLevel: "high",
+      maxTokens: "128000",
+      contextWindow: "1000000",
+      supportsImages: true,
+      maxImagesPerPrompt: "8",
+      reasoning: true,
+      apiProtocol: "chat-completions",
+    });
   });
 
   it("refuses an old client's key replacement over an unreadable secret that would drop a pin", async () => {
