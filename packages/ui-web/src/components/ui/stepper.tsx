@@ -1,6 +1,7 @@
 import { cn } from "@rakazo/ui-web/lib/utils";
 import { CheckIcon } from "lucide-react";
 import * as React from "react";
+import { TextShimmer } from "../../text-shimmer.js";
 
 type StepperStatus = "complete" | "current" | "upcoming";
 
@@ -114,11 +115,13 @@ function Stepper({
                   </span>
                 ) : null}
                 {step.description ? (
-                  <span
-                    className={cn("text-sm text-muted-foreground", step.busy && "text-shimmer")}
-                  >
-                    {step.description}
-                  </span>
+                  step.busy ? (
+                    <TextShimmer className="text-sm text-muted-foreground">
+                      {step.description}
+                    </TextShimmer>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">{step.description}</span>
+                  )
                 ) : null}
               </span>
             </div>
