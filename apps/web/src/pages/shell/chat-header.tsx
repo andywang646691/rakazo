@@ -62,7 +62,7 @@ export function ChatHeader({
           data-testid="bot-settings-trigger"
           aria-expanded={panelOpen}
           onClick={onTogglePanel}
-          className="bot-name-capsule app-no-drag h-11 min-w-0 gap-2 border border-border bg-background py-1 ps-1.5 pe-3.5 shadow-none"
+          className="bot-name-capsule app-no-drag h-11 min-w-0 gap-2 border border-border bg-background shadow-none"
         >
           {inGroup ? (
             <GroupAvatar
@@ -76,6 +76,7 @@ export function ChatHeader({
               identity={active.id}
               size={32}
               status={active.status}
+              className="size-8"
             />
           ) : null}
           <span className="flex min-w-0 items-center">

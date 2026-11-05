@@ -134,12 +134,32 @@ body,
   --frost-blur: 16px;
 }
 
+/* macOS paints appearance:button at the native control height, so the desktop window
+   flattens this pill. The explicit box keeps it identical to the browser. */
 .bot-name-capsule {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
+  padding: 4px 14px;
+  border-radius: 9999px;
+  line-height: 20px;
+  font-family: inherit;
   box-shadow: 0 2px 12px rgb(0 0 0 / 0.06);
   transition:
     background-color 150ms ease-out,
     box-shadow 150ms ease-out,
     transform 150ms ease-out;
+}
+
+/* The button's svg reset would draw a 32px avatar at 16px and make the pill look flat. */
+.bot-name-capsule > .rakazo-logo-avatar,
+.bot-name-capsule > .rakazo-bot-avatar,
+.bot-name-capsule > .rakazo-group-avatar {
+  width: 32px;
+  height: 32px;
+  flex: none;
 }
 
 .bot-name-chevron {
