@@ -38,6 +38,10 @@ For a big task, a bot can split off short-lived helpers that work in parallel an
 appears as a card in the chat showing **Running**, **Completed** or **Failed**. Subagents finish with
 the task; they have no chat or memory of their own.
 
+A bot can also leave a helper working in the background and keep talking with you meanwhile; the
+helper's result reaches the bot before it finishes. Background helpers cannot ask you anything or
+take actions that need your approval, and stopping the bot stops them too.
+
 ## Bots that build bots
 
 A bot can create new bots, and with **Manage other bots** turned on it can also organize and

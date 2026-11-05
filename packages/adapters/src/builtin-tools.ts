@@ -1433,6 +1433,11 @@ export const builtinAgentTools: ConnectorTool[] = [
           type: "string",
           description: "Optional connected model ID. Set together with model_provider.",
         },
+        background: {
+          type: "boolean",
+          description:
+            "Return at once; the result arrives later as an automated note. It cannot ask the person or need approval.",
+        },
       },
       required: ["name", "task"],
     },

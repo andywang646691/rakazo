@@ -30,6 +30,7 @@ import { COMPUTER_MODE_TOOLS } from "./pi-runtime-computer-mode.js";
 import { sanitizeSensitiveText } from "./pi-runtime-errors.js";
 import { clipToolResultContent, clipToolResultText } from "./pi-runtime-limits.js";
 import type { RuntimeModelTarget } from "./pi-runtime-models.js";
+import type { BackgroundHelpers } from "./pi-runtime-subagent.js";
 import { executeSubagent } from "./pi-runtime-subagent.js";
 import { parametersFor, prepareFleetArguments } from "./pi-runtime-tool-parameters.js";
 import { recordPiTelemetryContent, withPiTelemetrySpan } from "./pi-telemetry.js";
@@ -391,6 +392,7 @@ function toAgentTool(
           instructions: raw.instructions ? String(raw.instructions) : "",
           model_provider: raw.model_provider ? String(raw.model_provider) : "",
           model_id: raw.model_id ? String(raw.model_id) : "",
+          background: raw.background === true || raw.background === "true",
         };
       }
       if (tool.name === "spawn_bot") {
@@ -744,6 +746,8 @@ export interface ToolHost {
   captureCheckpoint?: (toolCallId: string, executionId: string) => Promise<void>;
   /** Shell commands that returned output and are still running. */
   pendingShells: Array<Promise<FinishedShellCommand>>;
+  /** Helpers started with background: true; only the main agent has them. */
+  backgroundHelpers?: BackgroundHelpers;
   /** Model responses started by the main agent. Helpers reset it, so each of their calls counts. */
   modelResponses?: number;
 }

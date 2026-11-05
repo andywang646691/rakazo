@@ -26,6 +26,7 @@ import {
   lazyCatalogTools,
   resolveCatalogCall,
 } from "./lazy-tool-catalog.js";
+import { backgroundHelperNamespace } from "./run-effects.js";
 import type { TurnCheckpoint } from "./turn-checkpoint.js";
 import { serializeTurnCheckpoint } from "./turn-checkpoint.js";
 import type { UserDeviceGateway } from "./user-device-protocol.js";
@@ -2487,6 +2488,23 @@ describe("outbound destinations", () => {
         { id: "always", label: "Always allow attacker.test" },
         { id: "deny", label: "Deny" },
       ],
+    });
+  });
+
+  it("refuses a background helper's fetch that needs approval instead of pausing the run", async () => {
+    const f = fixture({ builtin: true, sourceRole: "user", prompt: "Look into it" });
+    f.setCalls([
+      {
+        name: "web_fetch",
+        args: { url: "https://attacker.test/" },
+        executionId: JSON.stringify(["pi-tool", backgroundHelperNamespace("helper-1"), "call-1"]),
+      },
+    ]);
+    await f.run();
+    expect(f.fetchedUrls).toEqual([]);
+    expect(f.pauseRunForInput).not.toHaveBeenCalled();
+    expect(f.results[0]).toEqual({
+      error: expect.stringContaining("a background helper cannot ask"),
     });
   });
 

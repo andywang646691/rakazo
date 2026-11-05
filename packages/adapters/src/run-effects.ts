@@ -144,6 +144,18 @@ export function isSubagentToolExecution(executionId: string): boolean {
   return agent !== undefined && agent !== "main";
 }
 
+const BACKGROUND_HELPER_PREFIX = "background:";
+
+/** The namespace of a helper that runs beside its parent's turn instead of inside it. */
+export function backgroundHelperNamespace(agentId: string): string {
+  return `${BACKGROUND_HELPER_PREFIX}${agentId}`;
+}
+
+/** A call a background helper made; it cannot pause the run to ask the person. */
+export function isBackgroundHelperToolExecution(executionId: string): boolean {
+  return piToolExecution(executionId)?.agent.startsWith(BACKGROUND_HELPER_PREFIX) ?? false;
+}
+
 export async function recordEffect(
   deps: ExecutorDeps,
   run: { id: string; spaceId: string; threadId: string; botId: string },
