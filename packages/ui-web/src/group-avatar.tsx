@@ -91,7 +91,6 @@ export const GroupAvatar = memo(function GroupAvatar({
           style={{
             ...positions[index],
             zIndex: index + 1,
-            filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.6))",
           }}
         >
           <BotAvatar
@@ -105,7 +104,7 @@ export const GroupAvatar = memo(function GroupAvatar({
       ))}
       {members.length > 3 ? (
         <div
-          className="absolute right-0 bottom-0 z-[3] flex items-center justify-center rounded-full bg-secondary border border-border text-[10px] font-semibold text-secondary-foreground shadow-md"
+          className="absolute right-0 bottom-0 z-[3] flex items-center justify-center rounded-full bg-secondary border border-border text-[10px] font-semibold text-secondary-foreground"
           style={{
             width: miniSize,
             height: miniSize,
