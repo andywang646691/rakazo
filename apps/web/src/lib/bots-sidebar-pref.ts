@@ -30,8 +30,10 @@ export function writeBotsSidebarCollapsed(
 }
 
 export const BOTS_SIDEBAR_MINI_WIDTH = 72;
+/** Expanded bots sidebar. The width is fixed; it is not dragged. */
+export const BOTS_SIDEBAR_FIXED_WIDTH = 240;
 /** 15.5rem. Wider viewports use `BOTS_SIDEBAR_WIDE_WIDTH` when the user has not chosen a width. */
-export const BOTS_SIDEBAR_COMPACT_WIDTH = 248;
+export const BOTS_SIDEBAR_COMPACT_WIDTH = 240;
 /** 18rem, from the xl breakpoint up. */
 export const BOTS_SIDEBAR_WIDE_WIDTH = 288;
 export const BOTS_SIDEBAR_WIDE_MIN_VIEWPORT = 1280;

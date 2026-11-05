@@ -48,14 +48,14 @@ describe("bots sidebar width preference", () => {
       },
     });
     try {
-      expect(readBotsSidebarWidth("first")).toBe(248);
+      expect(readBotsSidebarWidth("first")).toBe(240);
       writeBotsSidebarWidth("first", 420);
       expect(readBotsSidebarWidth("first")).toBe(420);
-      expect(readBotsSidebarWidth("second")).toBe(248);
+      expect(readBotsSidebarWidth("second")).toBe(240);
       writeBotsSidebarWidth("second", 900);
       expect(readBotsSidebarWidth("second")).toBe(480);
       store.set(botsSidebarWidthStorageKey("first")!, "NaN");
-      expect(readBotsSidebarWidth("first")).toBe(248);
+      expect(readBotsSidebarWidth("first")).toBe(240);
       expect(maximumBotsSidebarWidth(768)).toBe(448);
       expect(clampBotsSidebarWidth(480, 768)).toBe(448);
     } finally {
@@ -70,7 +70,7 @@ describe("bots sidebar width preference", () => {
       },
     });
     try {
-      expect(readBotsSidebarWidth("user")).toBe(248);
+      expect(readBotsSidebarWidth("user")).toBe(240);
       expect(() => writeBotsSidebarWidth("user", 400)).not.toThrow();
     } finally {
       vi.unstubAllGlobals();

@@ -112,7 +112,7 @@ export function SidebarFooter({
   return (
     <div
       data-testid="sidebar-footer"
-      className={`flex shrink-0 items-center gap-2 bg-transparent ${mini ? "flex-col px-1 py-2" : "px-2.5 py-3"}`}
+      className={`flex shrink-0 items-center gap-2 bg-transparent ${mini ? "flex-col px-1 py-2" : "px-4 py-3"}`}
     >
       <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger
@@ -138,7 +138,8 @@ export function SidebarFooter({
             side="top"
             sideOffset={8}
             align="start"
-            className="max-h-(--available-height) w-[295px] max-w-[calc(100vw-69px)] gap-0 overflow-y-auto p-1 *:shrink-0 data-closed:animate-none"
+            data-testid="account-menu"
+            className="account-menu max-h-(--available-height) w-[208px] max-w-[calc(100vw-2rem)] gap-0 overflow-y-auto rounded-2xl p-1 shadow-none ring-foreground/10 *:shrink-0 data-closed:animate-none"
           >
             <div
               data-testid="account-menu-header"

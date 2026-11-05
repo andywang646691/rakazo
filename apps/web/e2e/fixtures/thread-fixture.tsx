@@ -53,6 +53,7 @@ export function FixtureTranscript({
   header,
   answerableAskIds = NO_IDS,
   bots = [BOT],
+  userBubble,
 }: {
   messages: readonly ThreadMessage[];
   running: boolean;
@@ -62,6 +63,7 @@ export function FixtureTranscript({
   answerableAskIds?: Set<string>;
   /** The chat's own bot first, then any peers it mentions or hands off to. */
   bots?: GroupAvatarMember[];
+  userBubble?: { background: string; foreground: string };
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const transcript = useMemo(
@@ -87,6 +89,7 @@ export function FixtureTranscript({
         dismissableAskIds={answerableAskIds}
         running={running}
         workingBots={running ? [bots[0]!] : []}
+        userBubble={userBubble}
         onLoadOlder={noop}
         onOpenBot={noop}
         onAnswer={resolved}

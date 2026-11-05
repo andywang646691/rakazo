@@ -1,8 +1,9 @@
 import { I18nProvider } from "@lingui/react";
 import type { Bot } from "@rakazo/contracts";
-import { BOT_COLOR_LIST } from "@rakazo/core";
+import { BOT_COLOR_LIST, chatUserBubbleColors } from "@rakazo/core";
 import { BotAvatar } from "@rakazo/ui-web";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { SidebarFooter } from "../../src/components/SidebarFooter";
 import { bootstrapI18n, i18n } from "../../src/lib/i18n";
@@ -15,12 +16,12 @@ import { Composer } from "../../src/pages/shell/composer";
 import { SidebarHeader } from "../../src/pages/shell/sidebar-header";
 import { BOT, FixtureTranscript } from "./thread-fixture";
 
-const purple = BOT_COLOR_LIST.find((color) => color.id === "purple")?.hex ?? BOT.color;
+const accent = BOT_COLOR_LIST.find((color) => color.id === "orange")?.hex ?? BOT.color;
 const chief = {
   id: BOT.botId,
   name: "Chief",
   description: "chief.example.com",
-  color: purple,
+  color: accent,
   avatarSet: "rakazo",
   status: "idle",
   notifyOnFinish: true,
@@ -42,16 +43,19 @@ function RosterRow({ name, active = false }: { name: string; active?: boolean })
     <div
       className={`mx-2 flex items-center gap-2.5 rounded-lg px-2 py-1.5 ${active ? "bg-sidebar-accent" : ""}`}
     >
-      <BotAvatar color={purple} identity={name} size={28} />
+      <BotAvatar color={accent} identity={name} size={28} />
       <span className="truncate text-[14px] font-medium">{name}</span>
     </div>
   );
 }
 
 function ChromePreview() {
+  const [accountOpen, setAccountOpen] = useState(
+    () => new URLSearchParams(location.search).get("menu") === "1",
+  );
   return (
     <div className="flex h-dvh bg-background text-foreground">
-      <aside className="flex w-[248px] shrink-0 flex-col border-e border-sidebar-border bg-sidebar xl:w-[288px]">
+      <aside className="flex w-[240px] shrink-0 flex-col border-e border-sidebar-border bg-sidebar">
         <SidebarHeader
           createMenuOpen={false}
           setCreateMenuOpen={noop}
@@ -74,8 +78,9 @@ function ChromePreview() {
         <SidebarFooter
           name="Alex"
           initials="A"
-          open={false}
-          onOpenChange={noop}
+          email="alex@example.com"
+          open={accountOpen}
+          onOpenChange={setAccountOpen}
           onIntegrations={noop}
           onSkills={noop}
           onArtifacts={noop}
@@ -126,6 +131,7 @@ function ChromePreview() {
           ]}
           running={false}
           showToolActivity={false}
+          userBubble={chatUserBubbleColors(chief.color, chief.id)}
         />
         <Composer
           artifactTarget={{ botId: BOT.botId }}

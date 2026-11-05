@@ -10,6 +10,7 @@ import { DEFAULT_NEW_BOT_AVATAR_SET } from "@rakazo/contracts";
 import {
   answerableAskMessageIds,
   channelMessageSender,
+  chatUserBubbleColors,
   dismissableAskMessageIds,
   foldPeerReplies,
   groupBotsForSidebar,
@@ -289,6 +290,10 @@ function SpaceShell() {
       navigate(`/app/${id}`);
     },
     [navigate, setMobileSidebarOpen],
+  );
+  const userBubble = useMemo(
+    () => (active ? chatUserBubbleColors(active.color, active.id) : undefined),
+    [active?.color, active?.id],
   );
   const activeGroup = groups.find((group) => group.id === groupId);
   const activeBotId = useRef<string | undefined>(inGroup ? undefined : active?.id);
@@ -974,14 +979,11 @@ function SpaceShell() {
     ) : null;
   const shell = (
     <BotsSidebarLayout
-      userId={userId}
       collapsed={botsSidebarCollapsed}
       onCollapsedChange={setBotsSidebarCollapsedPref}
-      onPreviewCollapsedChange={setBotsSidebarCollapsed}
-      computerOpen={computerOpen}
       data-testid="shell-root"
       data-ready={shellReady}
-      className="relative flex h-full min-h-0 min-w-0 overflow-hidden bg-background text-foreground/90 [&[data-resizing-sidebar]_*[data-slot=sidebar-gap]]:transition-none [&[data-resizing-sidebar]_*[data-slot=sidebar-container]]:transition-none"
+      className="relative flex h-full min-h-0 min-w-0 overflow-hidden bg-background text-foreground/90"
       {...swipeHandlers}
     >
       <ComputerUpdateProgress
@@ -1155,6 +1157,7 @@ function SpaceShell() {
               onReact={composer.reactToMessage}
               onJumpToMessage={jumpToReplyMessage}
               onOpenPeerMessages={openPeerMessages}
+              userBubble={userBubble}
               memberName={resolveTranscriptMemberName}
               peerBot={resolveTranscriptBot}
               onRefresh={refreshActiveThread}

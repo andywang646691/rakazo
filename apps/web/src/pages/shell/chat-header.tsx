@@ -38,7 +38,7 @@ export function ChatHeader({
   const referral = useBilling().status?.referral;
   const [inviteOpen, setInviteOpen] = useState(false);
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-10 grid grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-2 px-3 py-[13px] md:px-[22px] [&_button]:pointer-events-auto">
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-10 grid h-24 grid-cols-[1fr_minmax(0,auto)_1fr] items-start gap-2 bg-gradient-to-b from-background from-45% to-transparent px-3 pt-3 md:px-[22px] [&_button]:pointer-events-auto">
       <div className="flex items-center">
         <Button
           variant="floating"
@@ -55,16 +55,16 @@ export function ChatHeader({
         data-testid="bot-settings-trigger"
         aria-expanded={panelOpen}
         onClick={onTogglePanel}
-        className="app-no-drag h-8 min-w-0 gap-1.5 border border-border bg-background py-0 ps-1 pe-3 shadow-sm hover:bg-background"
+        className="bot-name-capsule app-no-drag h-11 min-w-0 gap-2 border border-border bg-background py-1 ps-1.5 pe-4 shadow-none hover:bg-background"
       >
         {inGroup ? (
-          <GroupAvatar members={activeSnapshot?.members ?? activeGroup?.members ?? []} size={26} />
+          <GroupAvatar members={activeSnapshot?.members ?? activeGroup?.members ?? []} size={32} />
         ) : active ? (
           <BotAvatar
             avatarSet={active.avatarSet}
             color={active.color}
             identity={active.id}
-            size={26}
+            size={32}
             status={active.status}
           />
         ) : null}
